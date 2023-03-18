@@ -1,0 +1,27 @@
+service: concert-owl
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+
+plugins:
+  - serverless-offline
+
+functions:
+  api:
+    handler: index.handler
+    events:
+      - httpApi:
+          path: /status
+          method: get
+  getShows:
+    handler: index.getShows
+    events:
+      - httpApi:
+          path: /shows
+          method: get
+  pushDailySummary:
+    handler: handler.getShows
+    events:
+      - schedule: cron(15 11 ? * * *)  
