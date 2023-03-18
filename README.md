@@ -16,12 +16,18 @@ This template demonstrates how to make a simple HTTP API with Node.js running on
 
 This template does not include any kind of persistence (database). For more advanced examples, check out the [serverless/examples repository](https://github.com/serverless/examples/) which includes Typescript, Mongo, DynamoDB and other examples.
 
+## TODO
+
+- store results in DB
+- compare to yesterday's results
+- post the new concerts to slack
+
 ## Usage
 
 ### Deployment
 
 ```
-$ serverless deploy
+serverless deploy
 ```
 
 After deploying, you should see output similar to:
@@ -73,7 +79,6 @@ Which should result in response similar to the following:
   "body": "{\n  \"message\": \"Go Serverless v3.0! Your function executed successfully!\",\n  \"input\": \"\"\n}"
 }
 ```
-
 
 Alternatively, it is also possible to emulate API Gateway and Lambda locally by using `serverless-offline` plugin. In order to do that, execute the following command:
 
