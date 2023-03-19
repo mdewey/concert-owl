@@ -22,6 +22,12 @@ functions:
           path: /shows
           method: get
   pushDailySummary:
-    handler: handler.getShows
+    handler: index.getShows
     events:
-      - schedule: cron(15 11 ? * * *)  
+      - schedule: cron(15 11 ? * * *)
+  test:
+    handler: index.test
+    events:
+      - httpApi:
+          path: /test
+          method: get  
