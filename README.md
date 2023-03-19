@@ -18,7 +18,7 @@ This template does not include any kind of persistence (database). For more adva
 
 ## TODO
 
-- store results in DB
+- added CI
 - compare to yesterday's results
 - post the new concerts to slack
 
