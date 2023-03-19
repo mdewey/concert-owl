@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const ACCESS_KEY = process.env.ACCESS_KEY;
 const SECRET_KEY = process.env.SECRET_KEY;
 const REGION = process.env.REGION || 'us-east-1';
-
+const TABLE_NAME = process.env.TABLE_NAME || 'owl-dev';
 
 
 const createShowList = (date, shows) => {
@@ -18,7 +18,7 @@ const createShowList = (date, shows) => {
     });
 
     const params = {
-      TableName: 'owl-dev',
+      TableName: TABLE_NAME,
       Item: {
         date,
         shows,
