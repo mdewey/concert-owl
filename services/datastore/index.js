@@ -1,11 +1,13 @@
-const AWS = require('aws-sdk');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, PutCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const {
+  DynamoDBDocumentClient,
+  PutCommand,
+  QueryCommand,
+  UpdateCommand,
+} = require('@aws-sdk/lib-dynamodb');
 
 const { v4: uuidv4 } = require('uuid');
 
-const ACCESS_KEY = process.env.ACCESS_KEY;
-const SECRET_KEY = process.env.SECRET_KEY;
 const REGION = process.env.REGION || 'us-east-1';
 const TABLE_NAME = process.env.TABLE_NAME || 'owl-dev';
 
@@ -65,8 +67,39 @@ const getShowList = async ({ url }) => {
   return data.Items[0];
 };
 
+const updateShowList = async ({ id, date, shows }) => {
+  const ddbClient = new DynamoDBClient({ region: REGION });
+
+  const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, {
+    marshallOptions,
+    unmarshallOptions,
+  });
+
+
+  const params = {
+    'TableName': TABLE_NAME,
+    'ReturnValues': 'ALL_NEW',
+    'ExpressionAttributeValues': {
+      ':d': date,
+      ':s': shows,
+    },
+    'ExpressionAttributeNames': {
+      '#D': 'date',
+    },
+    'Key': {
+      'id': id,
+    },
+    'UpdateExpression': 'SET shows = :s, #D = :d',
+
+  };
+
+  const data = await ddbDocClient.send(new UpdateCommand(params));
+  return data;
+};
+
 
 module.exports = {
   createShowList,
   getShowList,
+  updateShowList,
 };

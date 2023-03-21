@@ -3,7 +3,7 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
 const slack = require('./services/slack');
-const { createShowList, getShowList } = require('./services/datastore');
+const { createShowList, getShowList, updateShowList } = require('./services/datastore');
 const format = require('date-fns/format');
 
 // eslint-disable-next-line max-len
@@ -23,7 +23,7 @@ module.exports.handler = async (event) => {
   };
 };
 
-module.exports.getShows = async (event) => {
+module.exports.dailyRunner = async (event) => {
   const lastKnownShows = await getShowList({ url: URL });
   const shows = await getShows({ url: URL });
   const newShows = getNewShows({
@@ -34,8 +34,8 @@ module.exports.getShows = async (event) => {
   slack.postShows({ shows: newShows });
   // // save todays shows
   const today = format(new Date(), 'yyyy-MM-dd');
-  const createdShow = await createShowList({
-    url: URL,
+  const createdShow = await updateShowList({
+    id: lastKnownShows.id,
     date: today,
     shows: shows.list,
   });

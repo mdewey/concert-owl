@@ -16,13 +16,13 @@ functions:
           path: /status
           method: get
   getShows:
-    handler: index.getShows
+    handler: index.dailyRunner
     events:
       - httpApi:
           path: /shows
           method: get
   pushDailySummary:
-    handler: index.getShows
+    handler: index.dailyRunner
     events:
       - schedule: cron(15 11 ? * * *)
   test:

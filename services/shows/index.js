@@ -40,6 +40,5 @@ module.exports.getNewShows = ({ yesterday, today }) => {
       newShows.push(show);
     }
   });
-  console.log({ yesterday, today, yesterdayHash, newShows });
   return newShows;
 };

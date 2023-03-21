@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const postShows = async ({ shows, title = `You have ${shows.length} shows in PGH this year!` }) => {
+const postShows = async ({ shows, title = `There are ${shows.length} new shows!` }) => {
   const slackUrl = process.env.SLACK_URL;
 
 
