@@ -1,4 +1,4 @@
-const { getShows } = require('./services/shows');
+const { getShows, getNewShows } = require('./services/shows');
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
@@ -6,6 +6,7 @@ const slack = require('./services/slack');
 const { createShowList, getShowList } = require('./services/datastore');
 const format = require('date-fns/format');
 
+// eslint-disable-next-line max-len
 const URL = 'https://triblive.com/aande/music/pittsburgh-area-concert-calendar-2/';
 
 
@@ -23,20 +24,28 @@ module.exports.handler = async (event) => {
 };
 
 module.exports.getShows = async (event) => {
-  console.log(1);
   const lastKnownShows = await getShowList({ url: URL });
   const shows = await getShows({ url: URL });
-  slack.postShows({ shows: shows.list });
-  // save todays shows
+  const newShows = getNewShows({
+    yesterday: lastKnownShows?.shows || [],
+    today: shows.list,
+  });
+  console.log({ lastKnownShows, shows, newShows });
+  slack.postShows({ shows: newShows });
+  // // save todays shows
   const today = format(new Date(), 'yyyy-MM-dd');
-  const createdShow = await createShowList({ url: URL, date: today, shows: shows.list });
+  const createdShow = await createShowList({
+    url: URL,
+    date: today,
+    shows: shows.list,
+  });
 
   return {
     statusCode: 200,
     body: JSON.stringify(
       {
-        shows,
-        // lastKnownShows,
+        createdShow,
+        newShows,
       },
       null,
       2,

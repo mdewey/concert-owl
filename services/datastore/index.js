@@ -1,6 +1,6 @@
 const AWS = require('aws-sdk');
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const { DynamoDBDocumentClient, PutCommand, QueryCommand } = require("@aws-sdk/lib-dynamodb");
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, PutCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 
 const { v4: uuidv4 } = require('uuid');
 
@@ -34,15 +34,14 @@ const createShowList = async ({ url, date, shows }) => {
       shows,
       id: uuidv4(),
       source_url: url,
-    }
+    },
   };
 
   const data = await ddbDocClient.send(new PutCommand(params));
   return data;
-}
+};
 
 const getShowList = async ({ url }) => {
-
   const ddbClient = new DynamoDBClient({ region: REGION });
 
   const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, {
@@ -51,24 +50,23 @@ const getShowList = async ({ url }) => {
   });
 
   const params = {
-    KeyConditionExpression: "source_url  = :s",
+    KeyConditionExpression: 'source_url  = :s',
     ExpressionAttributeValues: {
-      ":s": url,
+      ':s': url,
     },
-    IndexName: "source_url-index",
+    IndexName: 'source_url-index',
     TableName: TABLE_NAME,
   };
 
 
-  const data = await ddbClient.send(new QueryCommand(params));
+  const data = await ddbDocClient.send(new QueryCommand(params));
   console.log({ data });
-  console.log("latest", data.Items[0])
+  console.log('latest', data.Items[0]);
   return data.Items[0];
-}
-
+};
 
 
 module.exports = {
   createShowList,
   getShowList,
-}
+};

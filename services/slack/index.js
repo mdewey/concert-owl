@@ -1,73 +1,82 @@
 const axios = require('axios');
 
 const postShows = async ({ shows, title = `You have ${shows.length} shows in PGH this year!` }) => {
-  const slackUrl = process.env.SLACK_URL
+  const slackUrl = process.env.SLACK_URL;
 
 
   const slackData = {
-    "text": title,
-    "blocks": [
+    'text': title,
+    'blocks': [
       {
-        "type": "header",
-        "text": {
-          "type": "plain_text",
-          "text": "What did the Owl find?",
-        }
+        'type': 'header',
+        'text': {
+          'type': 'plain_text',
+          'text': 'What did the Owl find?',
+        },
       },
       {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": `<!channel>, ${title} `
-        }
+        'type': 'section',
+        'text': {
+          'type': 'mrkdwn',
+          'text': `<!channel>, ${title} `,
+        },
       }, {
-        "type": "divider"
+        'type': 'divider',
       },
+      ...shows.map((show) => {
+        return {
+          'type': 'section',
+          'text': {
+            'type': 'mrkdwn',
+            'text': `*${show}*`,
+          },
+        };
+      }),
       {
-        "type": "divider"
+        'type': 'divider',
       }, {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": `Dance like the owl is watching.`
-        }
+        'type': 'section',
+        'text': {
+          'type': 'mrkdwn',
+          'text': `Dance like the owl is watching.`,
+        },
       },
-      { "type": "divider" },
-    ]
-  }
+      { 'type': 'divider' },
+    ],
+  };
   await axios.post(slackUrl, slackData);
-}
+};
 
 
 const postTestToSlack = async () => {
-  const slackUrl = process.env.SLACK_URL
+  const slackUrl = process.env.SLACK_URL;
   const slackData = {
-    "text": `Hello:world!`,
-    "blocks": [
+    'text': `Hello:world!`,
+    'blocks': [
       {
-        "type": "header",
-        "text": {
-          "type": "plain_text",
-          "text": "Error",
-          "emoji": true
-        }
+        'type': 'header',
+        'text': {
+          'type': 'plain_text',
+          'text': 'Error',
+          'emoji': true,
+        },
       }, {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": `Hello. there!`
-        }
+        'type': 'section',
+        'text': {
+          'type': 'mrkdwn',
+          'text': `Hello. there!`,
+        },
       }, {
-        "type": "divider"
+        'type': 'divider',
       },
 
 
-    ]
-  }
+    ],
+  };
   await axios.post(slackUrl, slackData);
-}
+};
 
 module.exports = {
   postShows,
-  postTestToSlack
-}
+  postTestToSlack,
+};
