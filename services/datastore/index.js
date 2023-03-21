@@ -61,8 +61,9 @@ const getShowList = async ({ url }) => {
 
 
   const data = await ddbClient.send(new QueryCommand(params));
-  console.log({ data })
-  return data;
+  console.log({ data });
+  console.log("latest", data.Items[0])
+  return data.Items[0];
 }
 
 
