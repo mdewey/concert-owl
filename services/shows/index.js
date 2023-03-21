@@ -2,9 +2,9 @@ const fetch = require('node-fetch');
 const { parse } = require('node-html-parser');
 const cheerio = require("cheerio");
 
-const URL = "https://triblive.com/aande/music/pittsburgh-area-concert-calendar-2/"
 
-module.exports.getShows = async (event) => {
+module.exports.getShows = async ({ url }) => {
+  const URL = url;
   const response = await fetch(URL);
   const body = await response.text();
 
