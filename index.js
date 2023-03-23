@@ -1,7 +1,5 @@
 const { getShows, getNewShows } = require('./services/shows');
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
-}
+
 const slack = require('./services/slack');
 const { createShowList, getShowList, updateShowList } = require('./services/datastore');
 const format = require('date-fns/format');

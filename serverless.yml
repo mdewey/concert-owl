@@ -4,6 +4,8 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: nodejs18.x
+  environment: ${file(env.yml)}
+
 
 plugins:
   - serverless-offline
@@ -21,6 +23,7 @@ functions:
       - httpApi:
           path: /shows
           method: get
+          
   pushDailySummary:
     handler: index.dailyRunner
     events:

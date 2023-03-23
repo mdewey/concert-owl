@@ -21,9 +21,15 @@ const unmarshallOptions = {
   wrapNumbers: false, // false, by default.
 };
 
-const createShowList = async ({ url, date, shows }) => {
-  const ddbClient = new DynamoDBClient({ region: REGION });
+const ddbClient = new DynamoDBClient({
+  region: REGION,
+  credentials: {
+    accessKeyId: process.env.ACCESS_KEY,
+    secretAccessKey: process.env.SECRET_KEY,
+  },
+});
 
+const createShowList = async ({ url, date, shows }) => {
   const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, {
     marshallOptions,
     unmarshallOptions,
@@ -44,8 +50,6 @@ const createShowList = async ({ url, date, shows }) => {
 };
 
 const getShowList = async ({ url }) => {
-  const ddbClient = new DynamoDBClient({ region: REGION });
-
   const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, {
     marshallOptions,
     unmarshallOptions,
@@ -68,8 +72,6 @@ const getShowList = async ({ url }) => {
 };
 
 const updateShowList = async ({ id, date, shows }) => {
-  const ddbClient = new DynamoDBClient({ region: REGION });
-
   const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, {
     marshallOptions,
     unmarshallOptions,
