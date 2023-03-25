@@ -64,3 +64,21 @@ module.exports.test = async (event) => {
     ),
   };
 };
+
+module.exports.searchByName = async (event) => {
+  const { name } = event.queryStringParameters;
+  console.log(event.queryStringParameters);
+  const { shows } = await getShowList({ url: URL });
+  const found = shows
+    .filter((show) => show.toLowerCase().includes(name.toLowerCase()));
+  return {
+    statusCode: 200,
+    body: JSON.stringify(
+      {
+        found,
+      },
+      null,
+      2,
+    ),
+  };
+};

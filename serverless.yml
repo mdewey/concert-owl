@@ -23,11 +23,19 @@ functions:
       - httpApi:
           path: /shows
           method: get
-          
   pushDailySummary:
     handler: index.dailyRunner
     events:
       - schedule: cron(15 11 ? * * *)
+  searchByName:
+    handler: index.searchByName
+    events:
+      - httpApi:
+          path: /search/name
+          method: GET
+      - httpApi:
+          path: /search/name
+          method: POST
   test:
     handler: index.test
     events:
