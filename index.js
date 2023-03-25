@@ -29,7 +29,7 @@ module.exports.dailyRunner = async (event) => {
     today: shows.list,
   });
   console.log({ lastKnownShows, shows, newShows });
-  slack.postShows({ shows: newShows });
+  slack.postShows({ shows: newShows, totalShows: shows.list.length });
   // // save todays shows
   const today = format(new Date(), 'yyyy-MM-dd');
   const createdShow = await updateShowList({

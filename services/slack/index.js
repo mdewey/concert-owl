@@ -1,8 +1,11 @@
 const axios = require('axios');
 
-const postShows = async ({ shows, title = `There are ${shows.length} new shows!` }) => {
+const postShows = async ({
+  shows,
+  title = `There are ${shows.length} new shows!`,
+  totalShows,
+}) => {
   const slackUrl = process.env.SLACK_URL;
-
 
   const slackData = {
     'text': title,
@@ -19,6 +22,15 @@ const postShows = async ({ shows, title = `There are ${shows.length} new shows!`
         'text': {
           'type': 'mrkdwn',
           'text': `<!channel>, ${title} `,
+        },
+      }, {
+        'type': 'divider',
+      },
+      {
+        'type': 'section',
+        'text': {
+          'type': 'mrkdwn',
+          'text': `Total shows this year: ${totalShows}`,
         },
       }, {
         'type': 'divider',
