@@ -36,6 +36,15 @@ functions:
       - httpApi:
           path: /search/name
           method: POST
+  searchByDate:
+    handler: index.searchByDate
+    events:
+      - httpApi:
+          path: /search/date
+          method: GET
+      - httpApi:
+          path: /search/date
+          method: POST
   test:
     handler: index.test
     events:

@@ -49,7 +49,7 @@ const createShowList = async ({ url, date, shows }) => {
   return data;
 };
 
-const getShowList = async ({ url }) => {
+const getShowList = async ({ url, convertToObject = false }) => {
   const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, {
     marshallOptions,
     unmarshallOptions,
@@ -66,9 +66,28 @@ const getShowList = async ({ url }) => {
 
 
   const data = await ddbDocClient.send(new QueryCommand(params));
-  console.log({ data });
-  console.log('latest', data.Items[0]);
-  return data.Items[0];
+  const rv = data.Items[0];
+  if (!convertToObject) {
+    return rv;
+  } else {
+    const parsed = {
+      ...rv,
+      shows: rv.shows.map((show) => {
+        const [date, ...theRest] = show.split(':');
+        const details = theRest.join(':');
+        const [artist, venue] = details.split(' at ');
+        if (!date || !details || !artist || !venue) {
+          console.log('error parsing show', show);
+        }
+        return {
+          date: date?.trim(),
+          artist: artist?.trim(),
+          venue: venue?.trim(),
+        };
+      }),
+    };
+    return parsed;
+  }
 };
 
 const updateShowList = async ({ id, date, shows }) => {

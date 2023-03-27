@@ -1,4 +1,4 @@
-const { getShows, getNewShows } = require('./services/shows');
+const { getShows, getNewShows, getShowsInDateRange } = require('./services/shows');
 
 const slack = require('./services/slack');
 const { createShowList, getShowList, updateShowList } = require('./services/datastore');
@@ -28,7 +28,6 @@ module.exports.dailyRunner = async (event) => {
     yesterday: lastKnownShows?.shows || [],
     today: shows.list,
   });
-  console.log({ lastKnownShows, shows, newShows });
   slack.postShows({ shows: newShows, totalShows: shows.list.length });
   // // save todays shows
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -67,10 +66,27 @@ module.exports.test = async (event) => {
 
 module.exports.searchByName = async (event) => {
   const { name } = event.queryStringParameters;
-  console.log(event.queryStringParameters);
   const { shows } = await getShowList({ url: URL });
   const found = shows
     .filter((show) => show.toLowerCase().includes(name.toLowerCase()));
+  return {
+    statusCode: 200,
+    body: JSON.stringify(
+      {
+        found,
+      },
+      null,
+      2,
+    ),
+  };
+};
+
+module.exports.searchByDate = async (event) => {
+  // get date from query string
+  const { date } = event.queryStringParameters;
+  const { shows } = await getShowList({ url: URL, convertToObject: true });
+  console.log({ date }, shows.length);
+  const found = await getShowsInDateRange({ date, shows });
   return {
     statusCode: 200,
     body: JSON.stringify(
