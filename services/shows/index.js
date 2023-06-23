@@ -72,7 +72,6 @@ module.exports.getShowsInDateRange = async ({ date, range = 7, shows }) => {
   const endDate = new Date(result);
   endDate.setDate(endDate.getDate() + range);
   // filter shows by date range
-  console.log('shows', shows.length);
   const found = shows
     .filter((show) => {
       // console.log({ show });

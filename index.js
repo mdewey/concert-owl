@@ -21,7 +21,7 @@ module.exports.handler = async (event) => {
   };
 };
 
-module.exports.dailyRunner = async (event) => {
+module.exports.dailyRunner = async () => {
   const lastKnownShows = await getShowList({ url: URL });
   const shows = await getShows({ url: URL });
   const newShows = getNewShows({
@@ -82,11 +82,12 @@ module.exports.searchByName = async (event) => {
 };
 
 module.exports.searchByDate = async (event) => {
+  console.log({ event });
   // get date from query string
-  const { date } = event.queryStringParameters;
+  const { date, range = 7 } = event.queryStringParameters;
   const { shows } = await getShowList({ url: URL, convertToObject: true });
   console.log({ date }, shows.length);
-  const found = await getShowsInDateRange({ date, shows });
+  const found = await getShowsInDateRange({ date, shows, range });
   return {
     statusCode: 200,
     body: JSON.stringify(
