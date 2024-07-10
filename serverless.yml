@@ -26,7 +26,7 @@ functions:
   pushDailySummary:
     handler: index.dailyRunner
     events:
-      - schedule: cron(15 11 ? * * *)
+      - schedule: rate(7 days)
   searchByName:
     handler: index.searchByName
     events:
