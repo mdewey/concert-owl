@@ -1,4 +1,8 @@
-const { parseShowsToJson, getShows, getNewShows, getShowsInDateRange } = require('./services/shows');
+const {
+  parseShowsToJson,
+  getShows,
+  getNewShows,
+  getShowsInDateRange } = require('./services/shows');
 
 const slack = require('./services/slack');
 const { getShowList, updateShowList } = require('./services/datastore');
@@ -32,7 +36,7 @@ module.exports.dailyRunner = async () => {
   // // save todays shows
   const today = format(new Date(), 'yyyy-MM-dd');
   const createdShow = await updateShowList({
-    id: lastKnownShows.id,
+    id: lastKnownShows?.id,
     date: today,
     shows: shows.list,
   });
@@ -41,8 +45,7 @@ module.exports.dailyRunner = async () => {
     statusCode: 200,
     body: JSON.stringify(
       {
-        createdShow,
-        newShows,
+        createdShow: createdShow.Attributes.id,
       },
       null,
       2,
