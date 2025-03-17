@@ -8,6 +8,9 @@
     "deploy": "serverless deploy",
     "invoke": "serverless invoke",
     "start": "serverless offline --reloadHandler",
+    "weekly": "serverless invoke local -f pushWeeklySummary", 
+    "upcoming": "serverless invoke local -f pushDailySummary", 
+    "help": "serverless help",
     "test": "jest",
     "test-coverage": "jest --coverage",
     "lint": "eslint ."

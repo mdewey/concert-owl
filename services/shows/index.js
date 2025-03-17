@@ -4,7 +4,6 @@ const cheerio = require('cheerio');
 const isBefore = require('date-fns/isBefore');
 const parse = require('date-fns/parse');
 
-
 const getShows = async ({ url }) => {
   const URL = url;
   const response = await fetch(URL);
@@ -74,7 +73,6 @@ module.exports.getShowsInDateRange = async ({ date, range = 7, shows }) => {
   // filter shows by date range
   const found = shows
     .filter((show) => {
-      // console.log({ show });
       const fullShowDate =
         `${getMonthFromDateString(show.date)} ${show.date.split(' ')[1]}`;
       const mask = 'MMMM d';
@@ -85,4 +83,20 @@ module.exports.getShowsInDateRange = async ({ date, range = 7, shows }) => {
     });
   // return shows
   return found;
+};
+
+module.exports.parseShowsToJson = async ({ shows = [] }) => {
+  return shows.map((show) => {
+    const [date, ...theRest] = show.split(':');
+    const details = theRest.join(':');
+    const [artist, venue] = details.split(' at ');
+    if (!date || !details || !artist || !venue) {
+      console.log('error parsing show', show);
+    }
+    return {
+      date: date?.trim(),
+      artist: artist?.trim(),
+      venue: venue?.trim(),
+    };
+  });
 };

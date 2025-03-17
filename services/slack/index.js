@@ -4,9 +4,8 @@ const postShows = async ({
   shows,
   title = `There are ${shows.length} new shows!`,
   totalShows,
+  slackUrl = process.env.SLACK_URL,
 }) => {
-  const slackUrl = process.env.SLACK_URL;
-
   const batched = batchShows({ shows });
 
   for (const batch of batched) {
@@ -80,7 +79,6 @@ const batchShows = ({ shows }) => {
     acc[index].push(show);
     return acc;
   }, []);
-  console.log('rv', rv);
   return rv;
 };
 

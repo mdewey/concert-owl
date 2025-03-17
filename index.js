@@ -1,11 +1,11 @@
-const { getShows, getNewShows, getShowsInDateRange } = require('./services/shows');
+const { parseShowsToJson, getShows, getNewShows, getShowsInDateRange } = require('./services/shows');
 
 const slack = require('./services/slack');
-const { createShowList, getShowList, updateShowList } = require('./services/datastore');
+const { getShowList, updateShowList } = require('./services/datastore');
 const format = require('date-fns/format');
 
 // eslint-disable-next-line max-len
-const URL = 'https://triblive.com/aande/music/pittsburgh-area-concert-calendar-2/';
+const URL = 'https://triblive.com/aande/music/2025-pittsburgh-area-concert-calendar/';
 
 
 module.exports.handler = async (event) => {
@@ -50,13 +50,23 @@ module.exports.dailyRunner = async () => {
   };
 };
 
-module.exports.test = async (event) => {
-  const rv = await createShowList('2019-01-01', ['show1', 'show2']);
+module.exports.pushWeeklySummary = async () => {
+  const data = await getShows({ url: URL });
+  const rv = await parseShowsToJson({ shows: data.list });
+  const today = format(new Date(), 'MMMM d');
+
+  const sorted = await getShowsInDateRange({ date: today, shows: rv });
+  await slack.postShows({
+    shows: sorted.map((show) => `${show.date} :  ${show.artist} at ${show.venue}`),
+    title: 'This week shows!',
+    totalShows: sorted.length,
+    slackUrl: process.env.WEEKLY_SLACK_URL });
+
   return {
     statusCode: 200,
     body: JSON.stringify(
       {
-        rv,
+        totalShows: sorted.length,
       },
       null,
       2,
@@ -82,11 +92,9 @@ module.exports.searchByName = async (event) => {
 };
 
 module.exports.searchByDate = async (event) => {
-  console.log({ event });
   // get date from query string
   const { date, range = 7 } = event.queryStringParameters;
   const { shows } = await getShowList({ url: URL, convertToObject: true });
-  console.log({ date }, shows.length);
   const found = await getShowsInDateRange({ date, shows, range });
   return {
     statusCode: 200,

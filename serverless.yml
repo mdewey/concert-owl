@@ -27,6 +27,10 @@ functions:
     handler: index.dailyRunner
     events:
       - schedule: rate(7 days)
+  pushWeeklySummary:
+    handler: index.pushWeeklySummary
+    events:
+      - schedule: rate(7 days)
   searchByName:
     handler: index.searchByName
     events:
@@ -46,7 +50,7 @@ functions:
           path: /search/date
           method: POST
   test:
-    handler: index.test
+    handler: index.pushWeeklySummary
     events:
       - httpApi:
           path: /test
