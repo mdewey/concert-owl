@@ -1,96 +1,114 @@
-<!--
-title: 'AWS Simple HTTP Endpoint example in NodeJS'
-description: 'This template demonstrates how to make a simple HTTP API with Node.js running on AWS Lambda and API Gateway using the Serverless Framework.'
-layout: Doc
-framework: v3
-platform: AWS
-language: nodeJS
-authorLink: 'https://github.com/serverless'
-authorName: 'Serverless, inc.'
-authorAvatar: 'https://avatars1.githubusercontent.com/u/13742415?s=200&v=4'
--->
+# Concert Owl
 
-# Serverless Framework Node HTTP API on AWS
+Concert Owl is a Node.js application that scrapes, processes, and posts information about upcoming concerts in the Pittsburgh area. It integrates with Slack and AWS DynamoDB to provide automated updates and summaries of new and upcoming shows.
 
-This template demonstrates how to make a simple HTTP API with Node.js running on AWS Lambda and API Gateway using the Serverless Framework.
+## Features
 
-This template does not include any kind of persistence (database). For more advanced examples, check out the [serverless/examples repository](https://github.com/serverless/examples/) which includes Typescript, Mongo, DynamoDB and other examples.
+- Scrapes concert data from a public events calendar
+- Stores and updates show data in AWS DynamoDB
+- Posts new and weekly show summaries to Slack
+- Includes utility scripts for daily and weekly automation
 
-## TODO
+## Prerequisites
 
-- added CI
-- update the one item for the source
+- Node.js (v18 or later recommended)
+- npm
+- AWS credentials (for DynamoDB access)
+- Slack webhook URL (for posting updates)
 
-## Usage
+## Setup Instructions
 
-### Deployment
+1. **Clone the repository:**
 
-```
-serverless deploy
-```
+   ```powershell
+   git clone <your-repo-url>
+   cd concert-owl
+   ```
 
-After deploying, you should see output similar to:
+2. **Install dependencies:**
 
-```bash
-Deploying aws-node-http-api-project to stage dev (us-east-1)
+   ```powershell
+   npm install
+   ```
 
-✔ Service deployed to stack aws-node-http-api-project-dev (152s)
+3. **Configure environment variables:**
 
-endpoint: GET - https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/
-functions:
-  hello: aws-node-http-api-project-dev-hello (1.9 kB)
-```
+   Create a `.env` file in the project root with the following content:
 
-_Note_: In current form, after deployment, your API is public and can be invoked by anyone. For production deployments, you might want to configure an authorizer. For details on how to do that, refer to [http event docs](https://www.serverless.com/framework/docs/providers/aws/events/apigateway/).
+   ```env
+   GEMINI_API_KEY=your_gemini_api_key
+   SLACK_URL=your_slack_webhook_url
+   WEEKLY_SLACK_URL=your_weekly_slack_webhook_url
+   REGION=your_aws_region
+   TABLE_NAME=your_dynamodb_table_name
+   ACCESS_KEY=your_aws_access_key
+   SECRET_KEY=your_aws_secret_key
+   ```
 
-### Invocation
+## How to Run
 
-After successful deployment, you can call the created application via HTTP:
+Below are the available npm scripts defined in `package.json`:
 
-```bash
-curl https://xxxxxxx.execute-api.us-east-1.amazonaws.com/
-```
+- **run:weekly**: Runs the weekly summary script with environment variables from `.env`.
 
-Which should result in response similar to the following (removed `input` content for brevity):
+  ```powershell
+  npm run run:weekly
+  # or
+  node --env-file=.env scripts/weekly.js
+  ```
 
-```json
-{
-  "message": "Go Serverless v2.0! Your function executed successfully!",
-  "input": {
-    ...
-  }
-}
-```
+  Posts a summary of upcoming shows for the week to Slack.
 
-### Local development
+- **run:upcoming:v1**: Runs the original daily summary script with environment variables from `.env`.
 
-You can invoke your function locally by using the following command:
+  ```powershell
+  npm run run:upcoming:v1
+  # or
+  node --env-file=.env scripts/upcoming.js
+  ```
 
-```bash
-serverless invoke local --function hello
-```
+  Posts new shows found since the last run to Slack (original version).
 
-Which should result in response similar to the following:
+- **run:upcoming:v2**: Runs an updated version of the daily summary script with environment variables from `.env`.
 
-```
-{
-  "statusCode": 200,
-  "body": "{\n  \"message\": \"Go Serverless v3.0! Your function executed successfully!\",\n  \"input\": \"\"\n}"
-}
-```
+  ```powershell
+  npm run run:upcoming:v2
+  # or
+  node --env-file=.env scripts/upcoming.v2.js
+  ```
 
-Alternatively, it is also possible to emulate API Gateway and Lambda locally by using `serverless-offline` plugin. In order to do that, execute the following command:
+  Posts new shows found since the last run to Slack (v2 version).
 
-```bash
-serverless plugin install -n serverless-offline
-```
+- **test**: Runs the test suite using Jest.
 
-It will add the `serverless-offline` plugin to `devDependencies` in `package.json` file as well as will add it to `plugins` in `serverless.yml`.
+  ```powershell
+  npm test
+  ```
 
-After installation, you can start local emulation with:
+- **test-coverage**: Runs the test suite with coverage reporting.
 
-```
-serverless offline
-```
+  ```powershell
+  npm run test-coverage
+  ```
 
-To learn more about the capabilities of `serverless-offline`, please refer to its [GitHub repository](https://github.com/dherault/serverless-offline).
+- **lint**: Lints the codebase using ESLint.
+
+  ```powershell
+  npm run lint
+  ```
+
+## Project Structure
+
+- `index.js` - Main entry point and Lambda handler functions
+- `services/` - Core logic for scraping, data storage, and Slack integration
+- `scripts/` - Automation scripts for daily and weekly tasks
+
+## Notes
+
+- Make sure your AWS and Slack credentials are valid and have the necessary permissions.
+- The project uses ES modules (`import`/`export` syntax).
+- For local development, ensure your `.env` file is set up correctly.
+
+---
+
+Feel free to customize this README for your deployment or team needs.
