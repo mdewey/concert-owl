@@ -1,8 +1,7 @@
-const fetch = require('node-fetch');
-const { parse: nodeParser } = require('node-html-parser');
-const cheerio = require('cheerio');
-const isBefore = require('date-fns/isBefore');
-const parse = require('date-fns/parse');
+import fetch from 'node-fetch';
+import { parse as nodeParser } from 'node-html-parser';
+import cheerio from 'cheerio';
+import { isBefore, parse, format } from 'date-fns';
 
 const getShows = async ({ url }) => {
   const URL = url;
@@ -45,9 +44,8 @@ const getMonthFromDateString = (dateString) => {
   return month;
 };
 
-module.exports.getShows = getShows;
-
-module.exports.getNewShows = ({ yesterday, today }) => {
+export { getShows };
+export const getNewShows = ({ yesterday, today }) => {
   // build hash of yesterday
   const yesterdayHash = {};
   yesterday.forEach((show) => {
@@ -63,7 +61,7 @@ module.exports.getNewShows = ({ yesterday, today }) => {
   return newShows;
 };
 
-module.exports.getShowsInDateRange = async ({ date, range = 7, shows }) => {
+export const getShowsInDateRange = async ({ date, range = 7, shows }) => {
   // get date 7 days in the future
   const result = parse(date, 'MMMM d', new Date());
   const startDate = new Date(result);
@@ -85,7 +83,7 @@ module.exports.getShowsInDateRange = async ({ date, range = 7, shows }) => {
   return found;
 };
 
-module.exports.parseShowsToJson = async ({ shows = [] }) => {
+export const parseShowsToJson = async ({ shows = [] }) => {
   return shows.map((show) => {
     const [date, ...theRest] = show.split(':');
     const details = theRest.join(':');
@@ -93,8 +91,18 @@ module.exports.parseShowsToJson = async ({ shows = [] }) => {
     if (!date || !details || !artist || !venue) {
       console.log('error parsing show', show);
     }
+    let dayOfWeek;
+    try {
+      const parsed = parse(date
+        .replace('.', '')
+        .replace('Sept', 'Sep'), 'MMMM d', new Date());
+      dayOfWeek = format(parsed, 'EEEE');
+    } catch (err) {
+      console.log('error parsing date', date, err);
+    }
     return {
       date: date?.trim(),
+      dayOfWeek,
       artist: artist?.trim(),
       venue: venue?.trim(),
     };

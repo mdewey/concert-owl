@@ -1,7 +1,6 @@
 module.exports = {
   'env': {
     'browser': true,
-    'commonjs': true,
     'es2021': true,
     'node': true,
     'jest': true,
@@ -11,6 +10,7 @@ module.exports = {
   ],
   'parserOptions': {
     'ecmaVersion': 'latest',
+    'sourceType': 'module',
   },
   'rules': {
     'semi': [1, 'always'],
@@ -20,6 +20,7 @@ module.exports = {
     'object-curly-spacing': [1, 'always'],
     'indent': [1, 2],
     'linebreak-style': 0,
-
+    'require-jsdoc': 0,
+    'valid-jsdoc': 0,
   },
 };

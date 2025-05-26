@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'axios';
 
 const postShows = async ({
   shows,
@@ -111,8 +111,4 @@ const postTestToSlack = async () => {
   await axios.post(slackUrl, slackData);
 };
 
-module.exports = {
-  postShows,
-  postTestToSlack,
-  batchShows,
-};
+export { postShows, postTestToSlack, batchShows };

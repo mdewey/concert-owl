@@ -1,18 +1,18 @@
-const {
+import {
   parseShowsToJson,
   getShows,
   getNewShows,
-  getShowsInDateRange } = require('./services/shows');
-
-const slack = require('./services/slack');
-const { getShowList, updateShowList } = require('./services/datastore');
-const format = require('date-fns/format');
+  getShowsInDateRange,
+} from './services/shows/index.js';
+import { addShowsGenre } from './services/ai/index.js';
+import * as slack from './services/slack/index.js';
+import { getShowList, updateShowList } from './services/datastore/index.js';
+import { format } from 'date-fns';
 
 // eslint-disable-next-line max-len
 const URL = 'https://triblive.com/aande/music/2025-pittsburgh-area-concert-calendar/';
 
-
-module.exports.handler = async (event) => {
+export async function handler(event) {
   return {
     statusCode: 200,
     body: JSON.stringify(
@@ -23,9 +23,9 @@ module.exports.handler = async (event) => {
       2,
     ),
   };
-};
+}
 
-module.exports.dailyRunner = async () => {
+export async function dailyRunner() {
   const lastKnownShows = await getShowList({ url: URL });
   const shows = await getShows({ url: URL });
   const newShows = getNewShows({
@@ -51,22 +51,23 @@ module.exports.dailyRunner = async () => {
       2,
     ),
   };
-};
+}
 
-
-module.exports.pushWeeklySummaryV2 = async () => {
+export async function pushWeeklySummaryV2() {
   const data = await getShows({ url: URL });
   const rv = await parseShowsToJson({ shows: data.list });
   const today = format(new Date(), 'MMMM d');
 
   const sorted = await getShowsInDateRange({ date: today, shows: rv });
-  // await slack.postShows({
-  //   shows: sorted.map((show) => `${show.date} :  ${show.artist} at ${show.venue}`),
-  //   title: 'This week shows!',
-  //   totalShows: sorted.length,
-  //   slackUrl: process.env.WEEKLY_SLACK_URL });
+  const fullPackage = await addShowsGenre(sorted);
+  await slack.postShows({
+    shows: fullPackage.map((show) =>
+      `${show.date}, ${show.dayOfWeek} : `+
+      `${show.artist} at ${show.venue} - ${show.genre}`),
+    title: 'This week shows!',
+    totalShows: sorted.length,
+    slackUrl: process.env.WEEKLY_SLACK_URL });
 
-  console.log('sorted', sorted);
 
   return {
     statusCode: 200,
@@ -78,21 +79,18 @@ module.exports.pushWeeklySummaryV2 = async () => {
       2,
     ),
   };
-};
+}
 
-
-module.exports.pushWeeklySummary = async () => {
+export async function pushWeeklySummary() {
   const data = await getShows({ url: URL });
   const rv = await parseShowsToJson({ shows: data.list });
   const today = format(new Date(), 'MMMM d');
-
   const sorted = await getShowsInDateRange({ date: today, shows: rv });
   await slack.postShows({
     shows: sorted.map((show) => `${show.date} :  ${show.artist} at ${show.venue}`),
     title: 'This week shows!',
     totalShows: sorted.length,
     slackUrl: process.env.WEEKLY_SLACK_URL });
-
   return {
     statusCode: 200,
     body: JSON.stringify(
@@ -103,13 +101,12 @@ module.exports.pushWeeklySummary = async () => {
       2,
     ),
   };
-};
+}
 
-module.exports.searchByName = async (event) => {
+export async function searchByName(event) {
   const { name } = event.queryStringParameters;
   const { shows } = await getShowList({ url: URL });
-  const found = shows
-    .filter((show) => show.toLowerCase().includes(name.toLowerCase()));
+  const found = shows.filter((show) => show.toLowerCase().includes(name.toLowerCase()));
   return {
     statusCode: 200,
     body: JSON.stringify(
@@ -120,10 +117,9 @@ module.exports.searchByName = async (event) => {
       2,
     ),
   };
-};
+}
 
-module.exports.searchByDate = async (event) => {
-  // get date from query string
+export async function searchByDate(event) {
   const { date, range = 7 } = event.queryStringParameters;
   const { shows } = await getShowList({ url: URL, convertToObject: true });
   const found = await getShowsInDateRange({ date, shows, range });
@@ -137,4 +133,4 @@ module.exports.searchByDate = async (event) => {
       2,
     ),
   };
-};
+}
