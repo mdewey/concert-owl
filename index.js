@@ -53,6 +53,34 @@ module.exports.dailyRunner = async () => {
   };
 };
 
+
+module.exports.pushWeeklySummaryV2 = async () => {
+  const data = await getShows({ url: URL });
+  const rv = await parseShowsToJson({ shows: data.list });
+  const today = format(new Date(), 'MMMM d');
+
+  const sorted = await getShowsInDateRange({ date: today, shows: rv });
+  // await slack.postShows({
+  //   shows: sorted.map((show) => `${show.date} :  ${show.artist} at ${show.venue}`),
+  //   title: 'This week shows!',
+  //   totalShows: sorted.length,
+  //   slackUrl: process.env.WEEKLY_SLACK_URL });
+
+  console.log('sorted', sorted);
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify(
+      {
+        totalShows: sorted.length,
+      },
+      null,
+      2,
+    ),
+  };
+};
+
+
 module.exports.pushWeeklySummary = async () => {
   const data = await getShows({ url: URL });
   const rv = await parseShowsToJson({ shows: data.list });
