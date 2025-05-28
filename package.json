@@ -5,9 +5,10 @@
   "description": "A Node.js application for tracking and managing concert events.",
   "main": "index.js",
   "scripts": {
-    "run:weekly": "node --env-file=.env scripts/weekly.js",
-    "run:upcoming:v1": "node --env-file=.env scripts/upcoming.js",
-    "run:upcoming:v2": "node --env-file=.env scripts/upcoming.v2.js",
+    "weekly": "node --env-file=.env scripts/weekly.js",
+    "weekly:v2": "node --env-file=.env scripts/weekly.v2.js",
+    "upcoming:v1": "node --env-file=.env scripts/upcoming.js",
+    "upcoming:v2": "node --env-file=.env scripts/upcoming.v2.js",
     "test": "jest",
     "test-coverage": "jest --coverage",
     "lint": "eslint ."

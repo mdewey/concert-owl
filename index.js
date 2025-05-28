@@ -62,8 +62,8 @@ export async function pushWeeklySummaryV2() {
   const fullPackage = await addShowsGenre(sorted);
   await slack.postShows({
     shows: fullPackage.map((show) =>
-      `${show.date}, ${show.dayOfWeek} : `+
-      `${show.artist} at ${show.venue} - ${show.genre}`),
+      `${show.dayOfWeek} - ${show.date},  : `+
+      `${show.artist} at ${show.venue} -- ${show.genre}`),
     title: 'This week shows!',
     totalShows: sorted.length,
     slackUrl: process.env.WEEKLY_SLACK_URL });
