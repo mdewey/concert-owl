@@ -53,6 +53,45 @@ export async function dailyRunner() {
   };
 }
 
+export async function postNewShows() {
+  const lastKnownShows = await getShowList({ url: URL });
+  const shows = await getShows({ url: URL });
+  const newShows = getNewShows({
+    yesterday: lastKnownShows?.shows || [],
+    today: shows.list,
+  });
+  const rv = await parseShowsToJson({ shows: newShows });
+
+  const fullPackage = await addShowsGenre(rv);
+  await slack.postShows({
+    shows: fullPackage.map((show) =>
+      `${show.date},  : `+
+      `${show.artist} at ${show.venue} -- ${show.genre}`),
+    totalShows: shows.list.length 
+  });
+  // // save todays shows
+  console.log('new shows', fullPackage.map((show) =>
+       `${show.date},  : `+
+       `${show.artist} at ${show.venue} -- ${show.genre}`));
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const createdShow = await updateShowList({
+    id: lastKnownShows?.id,
+    date: today,
+    shows: shows.list,
+  });
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify(
+      {
+        createdShow: createdShow.Attributes.id,
+      },
+      null,
+      2,
+    ),
+  };
+}
+
 export async function pushWeeklySummaryV2() {
   const data = await getShows({ url: URL });
   const rv = await parseShowsToJson({ shows: data.list });

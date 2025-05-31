@@ -1,2 +1,0 @@
-#!/bin/bash
-/usr/local/bin/cronitor exec olyp0k /Users/markdewey/.nvm/versions/node/v21.7.1/bin/node --env-file=/Users/markdewey/projects/concert-owl/.env /Users/markdewey/projects/concert-owl/scripts/weekly.js >> /tmp/weekly.log 2>&1
