@@ -79,7 +79,8 @@ export const getNewShows = ({ yesterday, today }) => {
 
 export const getShowsInDateRange = async ({ date, range = 7, shows }) => {
   // get date 7 days in the future
-  const result = parse(date, 'MMMM d', new Date());
+  const now = new Date();
+  const result = parse(date, 'MMMM d', now);
   const startDate = new Date(result);
   startDate.setDate(startDate.getDate() - 1);
   const endDate = new Date(result);
@@ -90,7 +91,13 @@ export const getShowsInDateRange = async ({ date, range = 7, shows }) => {
       const fullShowDate =
         `${getMonthFromDateString(show.date)} ${show.date.split(' ')[1]}`;
       const mask = 'MMMM d';
-      const parsedShowDate = parse(fullShowDate, mask, new Date());
+      let parsedShowDate = parse(fullShowDate, mask, now);
+      
+      // If the parsed date is before the start date, assume it's next year
+      if (isBefore(parsedShowDate, startDate)) {
+        parsedShowDate.setFullYear(parsedShowDate.getFullYear() + 1);
+      }
+      
       const startDateIsBeforeShow = isBefore(startDate, parsedShowDate);
       const showIsBeforeEndDate = isBefore(parsedShowDate, endDate);
       return startDateIsBeforeShow && showIsBeforeEndDate;
@@ -100,6 +107,7 @@ export const getShowsInDateRange = async ({ date, range = 7, shows }) => {
 };
 
 export const parseShowsToJson = async ({ shows = [] }) => {
+  const now = new Date();
   return shows.map((show) => {
     const [date, ...theRest] = show.split(':');
     const details = theRest.join(':');
@@ -109,9 +117,15 @@ export const parseShowsToJson = async ({ shows = [] }) => {
     }
     let dayOfWeek;
     try {
-      const parsed = parse(date
+      let parsed = parse(date
         .replace('.', '')
-        .replace('Sept', 'Sep'), 'MMMM d', new Date());
+        .replace('Sept', 'Sep'), 'MMMM d', now);
+      
+      // If the parsed date is before now, assume it's next year
+      if (isBefore(parsed, now)) {
+        parsed.setFullYear(parsed.getFullYear() + 1);
+      }
+      
       dayOfWeek = format(parsed, 'EEEE');
     } catch (err) {
       console.log('error parsing date', date, err);
