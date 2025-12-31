@@ -64,7 +64,12 @@ const postShows = async ({
         { 'type': 'divider' },
       ],
     };
-    await axios.post(slackUrl, slackData);
+    const resp = await axios.post(slackUrl, slackData);
+    console.log('Slack response:', {
+      status: resp.status,
+      statusText: resp.statusText,
+      data: resp.data,
+    });
   }
 };
 

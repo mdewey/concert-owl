@@ -65,9 +65,13 @@ export async function pushWeeklySummaryV2() {
       `${show.dayOfWeek} - ${show.date},  : `+
       `${show.artist} at ${show.venue} -- ${show.genre}`),
     title: 'This week shows!',
-    totalShows: sorted.length,
+    totalShows: fullPackage.length,
     slackUrl: process.env.WEEKLY_SLACK_URL });
-
+    
+  console.log("this week in shows", {
+    totalShows: sorted.length, 
+    fullPackage: fullPackage.length
+  });
 
   return {
     statusCode: 200,
