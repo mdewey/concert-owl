@@ -5,11 +5,27 @@ import { isBefore, parse, format } from 'date-fns';
 
 const getShows = async ({ url }) => {
   const URL = url;
-  const response = await fetch(URL);
+  const response = await fetch(URL, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:146.0) Gecko/20100101 Firefox/146.0',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.5',
+      'Accept-Encoding': 'gzip, deflate, br, zstd',
+      'Connection': 'keep-alive',
+      'Cookie': 'OptanonConsent=isIABGlobal=false&datestamp=Wed+Dec+31+2025+16%3A09%3A14+GMT-0500+(Eastern+Standard+Time)&version=202503.2.0&hosts=&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A1%2CC0003%3A1%2CC0004%3A1%2COSSTA_BG%3A1&geolocation=US%3BIL&AwaitingReconsent=false&isGpcEnabled=0&browserGpcFlag=0&consentId=b96cb3f1-23fb-4ccc-87f6-8a7ac9568ddf&interactionCount=0&isAnonUser=1&GPPCookiesCount=1; OptanonAlertBoxClosed=2025-04-04T17:45:18.074Z; OTGPPConsent=DBABLA~BVQqAAAAAAJY.QA',
+      'Upgrade-Insecure-Requests': '1',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-User': '?1',
+      'Priority': 'u=0, i',
+      'Pragma': 'no-cache',
+      'Cache-Control': 'no-cache'
+    }
+  });
   const body = await response.text();
-
   const $ = cheerio.load(body);
-  const shows = $('div#storyContent').children('p').map((i, el) => {
+  const shows = $('div#article-content').children('p').map((i, el) => {
     const text = $(el).toString();
     const item = nodeParser(text);
     const inner = item.innerText.replace('\n', '');
