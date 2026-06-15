@@ -1,4 +1,3 @@
-import dotenv from 'dotenv';
 import * as ConcertOwl from '../index.js';
 
 console.log('lets go', new Date());

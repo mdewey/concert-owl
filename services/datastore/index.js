@@ -61,7 +61,8 @@ async function dualWrite(method, args) {
 
 /** Compare a primary record against the secondary's and log any drift. */
 function compareReads(primaryRv, secondaryRv) {
-  const norm = (r) => r ? JSON.stringify({ id: r.id, date: r.date, shows: r.shows }) : null;
+  const norm = (r) =>
+    r ? JSON.stringify({ id: r.id, date: r.date, shows: r.shows }) : null;
   if (norm(primaryRv) === norm(secondaryRv)) {
     console.log(`[datastore] shadow read OK (${primaryName} == ${secondaryName})`);
   } else {

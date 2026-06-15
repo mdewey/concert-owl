@@ -1,4 +1,4 @@
-const { getShowsInDateRange } = require('./index');
+import { getShowsInDateRange } from './index.js';
 
 
 describe('getShowsInDateRange', () => {

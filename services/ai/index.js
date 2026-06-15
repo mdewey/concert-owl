@@ -26,6 +26,7 @@ const addShowsGenre = async (shows) => {
         contents: `In three words, what genre are the Bands ${show.artist}`,
       });
       const genre = response.text.replace('\n', '');
+      // eslint-disable-next-line max-len
       log(`(${i + 1}/${shows.length}) "${show.artist}" -> ${genre} (${Date.now() - showStart}ms)`);
       return {
         ...show,

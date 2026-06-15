@@ -6,6 +6,8 @@ import { isBefore, parse, format } from 'date-fns';
 const getShows = async ({ url }) => {
   const URL = url;
   const response = await fetch(URL, {
+    // Mimic a real browser so the calendar page returns full HTML.
+    /* eslint-disable max-len */
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:146.0) Gecko/20100101 Firefox/146.0',
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -20,8 +22,9 @@ const getShows = async ({ url }) => {
       'Sec-Fetch-User': '?1',
       'Priority': 'u=0, i',
       'Pragma': 'no-cache',
-      'Cache-Control': 'no-cache'
-    }
+      'Cache-Control': 'no-cache',
+    },
+    /* eslint-enable max-len */
   });
   const body = await response.text();
   const $ = cheerio.load(body);
@@ -91,13 +94,13 @@ export const getShowsInDateRange = async ({ date, range = 7, shows }) => {
       const fullShowDate =
         `${getMonthFromDateString(show.date)} ${show.date.split(' ')[1]}`;
       const mask = 'MMMM d';
-      let parsedShowDate = parse(fullShowDate, mask, now);
-      
+      const parsedShowDate = parse(fullShowDate, mask, now);
+
       // If the parsed date is before the start date, assume it's next year
       if (isBefore(parsedShowDate, startDate)) {
         parsedShowDate.setFullYear(parsedShowDate.getFullYear() + 1);
       }
-      
+
       const startDateIsBeforeShow = isBefore(startDate, parsedShowDate);
       const showIsBeforeEndDate = isBefore(parsedShowDate, endDate);
       return startDateIsBeforeShow && showIsBeforeEndDate;
@@ -117,15 +120,15 @@ export const parseShowsToJson = async ({ shows = [] }) => {
     }
     let dayOfWeek;
     try {
-      let parsed = parse(date
+      const parsed = parse(date
         .replace('.', '')
         .replace('Sept', 'Sep'), 'MMMM d', now);
-      
+
       // If the parsed date is before now, assume it's next year
       if (isBefore(parsed, now)) {
         parsed.setFullYear(parsed.getFullYear() + 1);
       }
-      
+
       dayOfWeek = format(parsed, 'EEEE');
     } catch (err) {
       console.log('error parsing date', date, err);

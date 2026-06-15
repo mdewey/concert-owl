@@ -13,7 +13,6 @@ import { format } from 'date-fns';
 const URL = 'https://triblive.com/aande/music/2025-pittsburgh-area-concert-calendar/';
 
 
-
 export async function postNewShows() {
   const lastKnownShows = await getShowList({ url: URL });
   const shows = await getShows({ url: URL });
@@ -28,11 +27,10 @@ export async function postNewShows() {
     shows: fullPackage.map((show) =>
       `${show.date},  : `+
       `${show.artist} at ${show.venue} -- ${show.genre}`),
-    totalShows: shows.list.length 
+    totalShows: shows.list.length,
   });
-  // // save todays shows
   console.log('new shows', fullPackage.map((show) =>
-       `${show.date},  : `+
+    `${show.date},  : `+
        `${show.artist} at ${show.venue} -- ${show.genre}`));
   const today = format(new Date(), 'yyyy-MM-dd');
   const createdShow = await updateShowList({
@@ -42,16 +40,7 @@ export async function postNewShows() {
     shows: shows.list,
   });
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify(
-      {
-        createdShow: createdShow.Attributes.id,
-      },
-      null,
-      2,
-    ),
-  };
+  return { createdShow: createdShow.Attributes.id };
 }
 
 export async function pushWeeklySummaryV2() {
@@ -68,52 +57,11 @@ export async function pushWeeklySummaryV2() {
     title: 'This week shows!',
     totalShows: fullPackage.length,
     slackUrl: process.env.WEEKLY_SLACK_URL });
-    
-  console.log("this week in shows", {
-    totalShows: sorted.length, 
-    fullPackage: fullPackage.length
+
+  console.log('this week in shows', {
+    totalShows: sorted.length,
+    fullPackage: fullPackage.length,
   });
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify(
-      {
-        totalShows: sorted.length,
-      },
-      null,
-      2,
-    ),
-  };
-}
-
-export async function searchByName(event) {
-  const { name } = event.queryStringParameters;
-  const { shows } = await getShowList({ url: URL });
-  const found = shows.filter((show) => show.toLowerCase().includes(name.toLowerCase()));
-  return {
-    statusCode: 200,
-    body: JSON.stringify(
-      {
-        found,
-      },
-      null,
-      2,
-    ),
-  };
-}
-
-export async function searchByDate(event) {
-  const { date, range = 7 } = event.queryStringParameters;
-  const { shows } = await getShowList({ url: URL, convertToObject: true });
-  const found = await getShowsInDateRange({ date, shows, range });
-  return {
-    statusCode: 200,
-    body: JSON.stringify(
-      {
-        found,
-      },
-      null,
-      2,
-    ),
-  };
+  return { totalShows: sorted.length };
 }

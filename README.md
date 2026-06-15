@@ -1,114 +1,118 @@
 # Concert Owl
 
-Concert Owl is a Node.js application that scrapes, processes, and posts information about upcoming concerts in the Pittsburgh area. It integrates with Slack and AWS DynamoDB to provide automated updates and summaries of new and upcoming shows.
+Concert Owl scrapes upcoming concerts for the Pittsburgh area, enriches each
+show with a genre via the Gemini API, and posts daily and weekly summaries to
+Slack. It runs as a set of scheduled scripts (e.g. via cron or a systemd timer)
+and persists show history to a configurable datastore.
 
 ## Features
 
-- Scrapes concert data from a public events calendar
-- Stores and updates show data in AWS DynamoDB
-- Posts new and weekly show summaries to Slack
-- Includes utility scripts for daily and weekly automation
+- Scrapes concert listings from a public events calendar
+- Enriches shows with genre classification using the Gemini API
+- Posts new-show alerts and weekly summaries to Slack
+- Pluggable datastore with a dual-write migration path from AWS DynamoDB to
+  local JSON storage (see [Datastore & migration](#datastore--migration))
 
-## Prerequisites
+## Requirements
 
-- Node.js (v18 or later recommended)
+- Node.js 18 or later (uses the built-in `--env-file` flag)
 - npm
-- AWS credentials (for DynamoDB access)
-- Slack webhook URL (for posting updates)
+- A Slack incoming webhook URL
+- A Gemini API key
+- AWS credentials with DynamoDB access — only while DynamoDB is part of the
+  active datastore mode
 
-## Setup Instructions
+## Setup
 
-1. **Clone the repository:**
+1. Install dependencies:
 
-   ```powershell
-   git clone <your-repo-url>
-   cd concert-owl
-   ```
-
-2. **Install dependencies:**
-
-   ```powershell
+   ```bash
    npm install
    ```
 
-3. **Configure environment variables:**
+2. Copy the sample environment file and fill in your values:
 
-   Create a `.env` file in the project root with the following content:
-
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key
-   SLACK_URL=your_slack_webhook_url
-   WEEKLY_SLACK_URL=your_weekly_slack_webhook_url
-   REGION=your_aws_region
-   TABLE_NAME=your_dynamodb_table_name
-   ACCESS_KEY=your_aws_access_key
-   SECRET_KEY=your_aws_secret_key
+   ```bash
+   cp .env.sample .env
    ```
 
-## How to Run
+The environment variables are:
 
-Below are the available npm scripts defined in `package.json`:
+| Variable           | Required            | Description                                                      |
+| ------------------ | ------------------- | ---------------------------------------------------------------- |
+| `SLACK_URL`        | Yes                 | Slack webhook for new-show alerts                                |
+| `WEEKLY_SLACK_URL` | Yes                 | Slack webhook for the weekly summary                             |
+| `GEMINI_API_KEY`   | Yes                 | API key for genre enrichment                                     |
+| `DATASTORE_MODE`   | No                  | Datastore mode (see below); defaults to `dual-write-read-dynamo` |
+| `JSON_STORE_PATH`  | No                  | Path to the JSON store; defaults to `./data/shows.json`          |
+| `REGION`           | When using DynamoDB | AWS region; defaults to `us-east-1`                              |
+| `TABLE_NAME`       | When using DynamoDB | DynamoDB table name                                              |
+| `ACCESS_KEY`       | When using DynamoDB | AWS access key ID                                                |
+| `SECRET_KEY`       | When using DynamoDB | AWS secret access key                                            |
 
-- **run:weekly**: Runs the weekly summary script with environment variables from `.env`.
+## Usage
 
-  ```powershell
-  npm run run:weekly
-  # or
-  node --env-file=.env scripts/weekly.js
-  ```
+| Command                 | Description                                        |
+| ----------------------- | -------------------------------------------------- |
+| `npm run upcoming:v2`   | Post shows discovered since the last run to Slack  |
+| `npm run weekly:v2`     | Post a summary of this week's shows to Slack       |
+| `npm run backfill`      | Copy existing DynamoDB records into the JSON store |
+| `npm test`              | Run the Jest test suite                            |
+| `npm run test-coverage` | Run the test suite with coverage reporting         |
+| `npm run lint`          | Lint the codebase with ESLint                      |
 
-  Posts a summary of upcoming shows for the week to Slack.
+Each script loads variables from `.env` via Node's `--env-file` flag. To run on
+a schedule, invoke `npm run upcoming:v2` and `npm run weekly:v2` from cron or a
+systemd timer at the desired cadence.
 
-- **run:upcoming:v1**: Runs the original daily summary script with environment variables from `.env`.
+## Datastore & migration
 
-  ```powershell
-  npm run run:upcoming:v1
-  # or
-  node --env-file=.env scripts/upcoming.js
-  ```
+The datastore is accessed through a single facade
+([`services/datastore/index.js`](services/datastore/index.js)) that supports a
+phased, dual-write migration from DynamoDB to a local JSON file. The active
+behavior is selected by the `DATASTORE_MODE` environment variable:
 
-  Posts new shows found since the last run to Slack (original version).
+| `DATASTORE_MODE`         | Behavior                                   | Phase                  |
+| ------------------------ | ------------------------------------------ | ---------------------- |
+| `dynamo-only`            | Read and write DynamoDB only               | Baseline               |
+| `dual-write-read-dynamo` | Write both stores, read DynamoDB (default) | 1 - start              |
+| `dual-write-read-json`   | Write both stores, read JSON               | 3 - after backfill     |
+| `json-only`              | Read and write JSON only                   | 4 - migration complete |
 
-- **run:upcoming:v2**: Runs an updated version of the daily summary script with environment variables from `.env`.
+In the dual modes, writes go to the primary (source of truth) first and to the
+secondary best-effort; reads come from the primary while a background **shadow
+read** of the secondary logs any drift between the two stores.
 
-  ```powershell
-  npm run run:upcoming:v2
-  # or
-  node --env-file=.env scripts/upcoming.v2.js
-  ```
+### Recommended migration sequence
 
-  Posts new shows found since the last run to Slack (v2 version).
+1. Deploy with `DATASTORE_MODE=dual-write-read-dynamo` and confirm the logs
+   report `shadow read OK`.
+2. Run `npm run backfill` to seed the JSON store from DynamoDB.
+3. Switch to `DATASTORE_MODE=dual-write-read-json` and continue monitoring for
+   drift, with DynamoDB still written as a safety net.
+4. Switch to `DATASTORE_MODE=json-only`, then remove the AWS SDK dependencies
+   (`aws-sdk`, `@aws-sdk/*`) and the AWS environment variables.
 
-- **test**: Runs the test suite using Jest.
+### Backups
 
-  ```powershell
-  npm test
-  ```
+In `json-only` mode the JSON file is the sole copy of your show history. Note
+that `data/` is git-ignored by default, so it is **not** version controlled —
+back it up (for example, a scheduled `rsync` to another disk, or committing the
+file to a private repository) to protect against storage failure.
 
-- **test-coverage**: Runs the test suite with coverage reporting.
+## Project structure
 
-  ```powershell
-  npm run test-coverage
-  ```
-
-- **lint**: Lints the codebase using ESLint.
-
-  ```powershell
-  npm run lint
-  ```
-
-## Project Structure
-
-- `index.js` - Main entry point and Lambda handler functions
-- `services/` - Core logic for scraping, data storage, and Slack integration
-- `scripts/` - Automation scripts for daily and weekly tasks
+```text
+index.js                     Entry points (postNewShows, pushWeeklySummaryV2)
+services/
+  shows/                     Scraping, parsing, and date-range filtering
+  ai/                        Gemini genre enrichment
+  slack/                     Slack posting
+  datastore/                 Datastore facade + DynamoDB and JSON implementations
+scripts/                     Scheduled-run and backfill entry points
+```
 
 ## Notes
 
-- Make sure your AWS and Slack credentials are valid and have the necessary permissions.
-- The project uses ES modules (`import`/`export` syntax).
-- For local development, ensure your `.env` file is set up correctly.
-
----
-
-Feel free to customize this README for your deployment or team needs.
+- The project uses ES modules (`import`/`export`).
+- Ensure your AWS and Slack credentials have the necessary permissions.

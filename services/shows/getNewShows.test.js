@@ -1,4 +1,4 @@
-const { getNewShows } = require('./index');
+import { getNewShows } from './index.js';
 
 describe('getNewShows', () => {
   test('should return new shows when there are new shows today vs tomorrow', () => {

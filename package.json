@@ -8,8 +8,8 @@
     "backfill": "node --env-file=.env scripts/backfill-to-json.js",
     "weekly:v2": "node --env-file=.env scripts/weekly.v2.js",
     "upcoming:v2": "node --env-file=.env scripts/upcoming.v2.js",
-    "test": "jest",
-    "test-coverage": "jest --coverage",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test-coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "lint": "eslint ."
   },
   "author": "",
