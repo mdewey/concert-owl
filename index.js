@@ -37,6 +37,7 @@ export async function postNewShows() {
   const today = format(new Date(), 'yyyy-MM-dd');
   const createdShow = await updateShowList({
     id: lastKnownShows?.id,
+    url: URL,
     date: today,
     shows: shows.list,
   });

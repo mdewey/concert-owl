@@ -5,6 +5,7 @@
   "description": "A Node.js application for tracking and managing concert events.",
   "main": "index.js",
   "scripts": {
+    "backfill": "node --env-file=.env scripts/backfill-to-json.js",
     "weekly:v2": "node --env-file=.env scripts/weekly.v2.js",
     "upcoming:v2": "node --env-file=.env scripts/upcoming.v2.js",
     "test": "jest",

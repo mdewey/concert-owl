@@ -1,121 +1,89 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import {
-  DynamoDBDocumentClient,
-  PutCommand,
-  QueryCommand,
-  UpdateCommand,
-} from '@aws-sdk/lib-dynamodb';
+/**
+ * Datastore facade — orchestrates a dual-write migration from DynamoDB to a
+ * local JSON file. Callers (getShowList / updateShowList / createShowList) are
+ * unchanged; behaviour is selected by the DATASTORE_MODE env var:
+ *
+ *   dynamo-only             read + write DynamoDB only (pre-migration baseline)
+ *   dual-write-read-dynamo  write BOTH, read DynamoDB  (Phase 1 — default)
+ *   dual-write-read-json    write BOTH, read JSON       (Phase 3 — after backfill)
+ *   json-only               read + write JSON only      (Phase 4 — migration done)
+ *
+ * In the dual modes, writes go to the primary (source of truth) first and its
+ * result is returned; the secondary is written best-effort. Reads come from the
+ * primary, and a shadow read of the secondary runs in the background to log any
+ * drift — that comparison is the whole point of practicing the migration.
+ */
 import { v4 as uuidv4 } from 'uuid';
+import * as dynamo from './dynamo-store.js';
+import * as json from './json-store.js';
 
-const REGION = process.env.REGION || 'us-east-1';
-const TABLE_NAME = process.env.TABLE_NAME || 'owl-dev';
-
-const marshallOptions = {
-  convertEmptyValues: false, // false, by default.
-  removeUndefinedValues: true, // false, by default.
-  convertClassInstanceToMap: false, // false, by default.
+const MODES = {
+  'dynamo-only': { primary: dynamo, secondary: null },
+  'dual-write-read-dynamo': { primary: dynamo, secondary: json },
+  'dual-write-read-json': { primary: json, secondary: dynamo },
+  'json-only': { primary: json, secondary: null },
 };
 
-const unmarshallOptions = {
-  wrapNumbers: false, // false, by default.
-};
+const MODE = process.env.DATASTORE_MODE || 'dual-write-read-dynamo';
+const { primary, secondary } = MODES[MODE] || MODES['dual-write-read-dynamo'];
 
-const ddbClient = new DynamoDBClient({
-  region: REGION,
-  credentials: {
-    accessKeyId: process.env.ACCESS_KEY,
-    secretAccessKey: process.env.SECRET_KEY,
-  },
-});
+if (!MODES[MODE]) {
+  console.warn(
+    `[datastore] unknown DATASTORE_MODE "${MODE}", ` +
+    `falling back to dual-write-read-dynamo`);
+} else {
+  console.log(`[datastore] mode: ${MODE}`);
+}
 
-const createShowList = async ({ url, date, shows }) => {
-  const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, {
-    marshallOptions,
-    unmarshallOptions,
-  });
+const primaryName = primary === dynamo ? 'dynamo' : 'json';
+const secondaryName = secondary === dynamo ? 'dynamo' : 'json';
 
-  const params = {
-    TableName: TABLE_NAME,
-    Item: {
-      date,
-      shows,
-      id: uuidv4(),
-      source_url: url,
-    },
-  };
-
-  const data = await ddbDocClient.send(new PutCommand(params));
-  return data;
-};
-
-const getShowList = async ({ url, convertToObject = false }) => {
-  const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, {
-    marshallOptions,
-    unmarshallOptions,
-  });
-
-  const params = {
-    KeyConditionExpression: 'source_url  = :s',
-    ExpressionAttributeValues: {
-      ':s': url,
-    },
-    IndexName: 'source_url-index',
-    TableName: TABLE_NAME,
-  };
-
-
-  const data = await ddbDocClient.send(new QueryCommand(params));
-  const rv = data.Items[0];
-  if (!convertToObject) {
-    return rv;
-  } else {
-    const parsed = {
-      ...rv,
-      shows: rv.shows.map((show) => {
-        const [date, ...theRest] = show.split(':');
-        const details = theRest.join(':');
-        const [artist, venue] = details.split(' at ');
-        if (!date || !details || !artist || !venue) {
-          console.log('error parsing show', show);
-        }
-        return {
-          date: date?.trim(),
-          artist: artist?.trim(),
-          venue: venue?.trim(),
-        };
-      }),
-    };
-    return parsed;
+/** Run a write against the primary (returned) then the secondary (best-effort). */
+async function dualWrite(method, args) {
+  // On a brand-new record there's no id yet. Pin one here (rather than letting
+  // each store invent its own) so DynamoDB gets a valid Key AND both stores
+  // create the record under the same id — no drift in the shadow-read compare.
+  if (method === 'updateShowList' && !args.id) {
+    args = { ...args, id: uuidv4() };
   }
+  const result = await primary[method](args);
+  if (secondary) {
+    try {
+      await secondary[method](args);
+    } catch (err) {
+      console.error(
+        `[datastore] secondary (${secondaryName}) ${method} failed, ` +
+        `continuing on primary (${primaryName}):`, err.message);
+    }
+  }
+  return result;
+}
+
+/** Compare a primary record against the secondary's and log any drift. */
+function compareReads(primaryRv, secondaryRv) {
+  const norm = (r) => r ? JSON.stringify({ id: r.id, date: r.date, shows: r.shows }) : null;
+  if (norm(primaryRv) === norm(secondaryRv)) {
+    console.log(`[datastore] shadow read OK (${primaryName} == ${secondaryName})`);
+  } else {
+    console.warn(
+      `[datastore] shadow read DRIFT (${primaryName} != ${secondaryName})`,
+      { primary: primaryRv, secondary: secondaryRv });
+  }
+}
+
+const createShowList = (args) => dualWrite('createShowList', args);
+const updateShowList = (args) => dualWrite('updateShowList', args);
+
+const getShowList = async (args) => {
+  const result = await primary.getShowList(args);
+  if (secondary) {
+    // Fire-and-forget so a slow/failing secondary never blocks the real read.
+    secondary.getShowList(args)
+      .then((other) => compareReads(result, other))
+      .catch((err) => console.error(
+        `[datastore] shadow read (${secondaryName}) failed:`, err.message));
+  }
+  return result;
 };
-
-const updateShowList = async ({ id, date, shows }) => {
-  const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, {
-    marshallOptions,
-    unmarshallOptions,
-  });
-
-
-  const params = {
-    'TableName': TABLE_NAME,
-    'ReturnValues': 'ALL_NEW',
-    'ExpressionAttributeValues': {
-      ':d': date,
-      ':s': shows,
-    },
-    'ExpressionAttributeNames': {
-      '#D': 'date',
-    },
-    'Key': {
-      'id': id,
-    },
-    'UpdateExpression': 'SET shows = :s, #D = :d',
-
-  };
-
-  const data = await ddbDocClient.send(new UpdateCommand(params));
-  return data;
-};
-
 
 export { createShowList, getShowList, updateShowList };

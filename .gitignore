@@ -100,6 +100,11 @@ dist
 # DynamoDB Local files
 .dynamodb/
 
+# Local data storage (JSON-based shows database)
+# Uncomment the line below if you don't want show history in version control:
+data/
+data/*.tmp
+
 # TernJS port file
 .tern-port
 
