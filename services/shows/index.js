@@ -113,9 +113,20 @@ export const parseShowsToJson = async ({ shows = [] }) => {
   const now = new Date();
   return shows.map((show) => {
     const [date, ...theRest] = show.split(':');
-    const details = theRest.join(':');
-    const [artist, venue] = details.split(' at ');
-    if (!date || !details || !artist || !venue) {
+    const details = theRest.join(':').trim();
+    // Venue is the tail after the last " at " — event titles can carry their own
+    // colons or the word "at", so anchor on the LAST delimiter. Fall back to
+    // " in " for entries like "...North to Nashville in Bridgewater", and leave
+    // the venue empty for festival lines that name no venue at all.
+    let artist = details;
+    let venue;
+    const atIdx = details.lastIndexOf(' at ');
+    const splitIdx = atIdx !== -1 ? atIdx : details.lastIndexOf(' in ');
+    if (splitIdx !== -1) {
+      artist = details.slice(0, splitIdx).trim();
+      venue = details.slice(splitIdx + 4).trim();
+    }
+    if (!date || !artist) {
       console.log('error parsing show', show);
     }
     let dayOfWeek;
@@ -136,8 +147,8 @@ export const parseShowsToJson = async ({ shows = [] }) => {
     return {
       date: date?.trim(),
       dayOfWeek,
-      artist: artist?.trim(),
-      venue: venue?.trim(),
+      artist,
+      venue,
     };
   });
 };
