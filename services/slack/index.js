@@ -87,6 +87,49 @@ const batchShows = ({ shows }) => {
   return rv;
 };
 
+const postRecommendations = async ({
+  recommendations,
+  slackUrl = process.env.RECOMMENDATIONS_SLACK_URL,
+}) => {
+  const slackData = {
+    'blocks': [
+      {
+        'type': 'header',
+        'text': {
+          'type': 'plain_text',
+          'text': '🎵 Shows matching your vibe',
+          'emoji': true,
+        },
+      },
+      {
+        'type': 'section',
+        'text': {
+          'type': 'mrkdwn',
+          'text':
+            `<!channel> ${recommendations.length} upcoming ` +
+            `show(s) that fit your Spotify vibe:`,
+        },
+      },
+      { 'type': 'divider' },
+      ...recommendations.map((r) => ({
+        'type': 'section',
+        'text': {
+          'type': 'mrkdwn',
+          'text':
+            `*${r.artist}* at ${r.venue} — ${r.date}` +
+            (r.reason ? `\n_${r.reason}_` : ''),
+        },
+      })),
+      { 'type': 'divider' },
+    ],
+  };
+  const resp = await axios.post(slackUrl, slackData);
+  console.log('Slack (recommendations) response:', {
+    status: resp.status,
+    statusText: resp.statusText,
+  });
+};
+
 const postTestToSlack = async () => {
   const slackUrl = process.env.SLACK_URL;
 
@@ -116,4 +159,4 @@ const postTestToSlack = async () => {
   await axios.post(slackUrl, slackData);
 };
 
-export { postShows, postTestToSlack, batchShows };
+export { postShows, postRecommendations, postTestToSlack, batchShows };

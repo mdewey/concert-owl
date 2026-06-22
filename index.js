@@ -4,7 +4,8 @@ import {
   getNewShows,
   getShowsInDateRange,
 } from './services/shows/index.js';
-import { addShowsGenre } from './services/ai/index.js';
+import { addShowsGenre, narrowRecommendations } from './services/ai/index.js';
+import { getVibe, matchBandToVibe } from './services/spotify/index.js';
 import * as slack from './services/slack/index.js';
 import { getShowList, updateShowList } from './services/datastore/index.js';
 import { format } from 'date-fns';
@@ -86,4 +87,51 @@ export async function pushWeeklySummaryV2() {
   });
 
   return { totalShows: sorted.length };
+}
+
+export async function pushVibeRecommendations() {
+  const data = await getShows({ url: URL });
+  const parsed = await parseShowsToJson({ shows: data.list });
+  const today = format(new Date(), 'MMMM d');
+  const thisWeek = await getShowsInDateRange({ date: today, shows: parsed });
+
+  const vibe = await getVibe();
+  console.log('vibe profile', {
+    artists: vibe.artistCount,
+    genres: vibe.genres.length,
+  });
+
+  // Match each unique headliner against the (full) vibe genre set. Cache by
+  // name so repeat artists don't re-hit Spotify, and never let one bad lookup
+  // sink the whole run.
+  const cache = new Map();
+  const matches = [];
+  for (const show of thisWeek) {
+    const headliner = show.artist?.split(',')[0].trim();
+    if (!headliner) continue;
+    if (!cache.has(headliner)) {
+      try {
+        cache.set(headliner, await matchBandToVibe({ name: headliner, vibe }));
+      } catch (err) {
+        console.error('vibe match failed for', headliner, err.message);
+        cache.set(headliner, { isMatch: false, overlap: [] });
+      }
+    }
+    const result = cache.get(headliner);
+    if (result.isMatch) {
+      matches.push({ ...show, artist: headliner, overlap: result.overlap });
+    }
+  }
+  console.log(`vibe matches: ${matches.length} of ${thisWeek.length} shows`);
+
+  if (!matches.length) {
+    console.log('no vibe matches this week; nothing to post');
+    return { matches: 0, recommended: 0 };
+  }
+
+  // Wide matching returns a lot; let the AI narrow to the strongest picks.
+  const recommendations = await narrowRecommendations({ matches, vibe });
+  await slack.postRecommendations({ recommendations });
+
+  return { matches: matches.length, recommended: recommendations.length };
 }
