@@ -13,7 +13,6 @@ import {
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
-import { convertToObjects } from './shared.js';
 
 const REGION = process.env.REGION || 'us-east-1';
 const TABLE_NAME = process.env.TABLE_NAME || 'owl-dev';
@@ -56,7 +55,7 @@ const createShowList = async ({ url, date, shows }) => {
   return data;
 };
 
-const getShowList = async ({ url, convertToObject = false }) => {
+const getShowList = async ({ url }) => {
   const params = {
     KeyConditionExpression: 'source_url  = :s',
     ExpressionAttributeValues: {
@@ -67,11 +66,7 @@ const getShowList = async ({ url, convertToObject = false }) => {
   };
 
   const data = await ddbDocClient.send(new QueryCommand(params));
-  const rv = data.Items[0];
-  if (!convertToObject) {
-    return rv;
-  }
-  return convertToObjects(rv);
+  return data.Items[0];
 };
 
 const updateShowList = async ({ id, url, date, shows }) => {

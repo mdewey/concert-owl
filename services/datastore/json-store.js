@@ -12,7 +12,6 @@ import { readFile, writeFile, rename, mkdir } from 'fs/promises';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
-import { convertToObjects } from './shared.js';
 
 const DATA_FILE = process.env.JSON_STORE_PATH ||
   resolve(dirname(fileURLToPath(import.meta.url)), '../../data/shows.json');
@@ -41,13 +40,9 @@ const createShowList = async ({ url, date, shows }) => {
   return item;
 };
 
-const getShowList = async ({ url, convertToObject = false }) => {
+const getShowList = async ({ url }) => {
   const records = await readAll();
-  const rv = records.find((r) => r.source_url === url);
-  if (!rv || !convertToObject) {
-    return rv;
-  }
-  return convertToObjects(rv);
+  return records.find((r) => r.source_url === url);
 };
 
 const updateShowList = async ({ id, url, date, shows }) => {
