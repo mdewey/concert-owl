@@ -51,11 +51,13 @@ const addShowsGenre = async (shows) => {
 const narrowRecommendations = async ({ matches, vibe, limit = 10 }) => {
   if (!matches.length) return [];
   const topGenres = vibe.genres.slice(0, 15).map((g) => g.genre).join(', ');
+  const artists = vibe.artistNames.join(', ');
   const list = matches.map((m, i) =>
     `${i + 1}. ${m.artist} — ${m.venue} (${m.date}) ` +
     `[overlap: ${m.overlap.join(', ')}]`).join('\n');
   const prompt =
-    `My music taste leans toward these genres: ${topGenres}.\n\n` +
+    `My music taste — top genres: ${topGenres}.\n` +
+    `Artists I listen to: ${artists}.\n\n` +
     `Here are upcoming concerts whose artists share some of those genres:\n` +
     `${list}\n\n` +
     `Pick up to ${limit} that best fit my vibe, strongest first. Respond with ` +
