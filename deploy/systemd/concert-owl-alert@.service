@@ -1,0 +1,13 @@
+[Unit]
+Description=Concert Owl failure alert for %i
+Documentation=https://github.com/mdewey/concert-owl
+
+# Templated unit: started via `OnFailure=concert-owl-alert@%N.service` from the
+# job units. The instance name (%i) is the failed unit, forwarded to alert.js
+# so it can name the job in Slack.
+
+[Service]
+Type=oneshot
+User=dewey
+WorkingDirectory=/home/dewey/projects/concert-owl
+ExecStart=/home/dewey/.nvm/versions/node/v21.7.1/bin/node --env-file=/home/dewey/projects/concert-owl/.env /home/dewey/projects/concert-owl/scripts/alert.js %i

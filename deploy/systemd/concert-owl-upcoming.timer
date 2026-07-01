@@ -1,0 +1,9 @@
+[Unit]
+Description=Schedule Concert Owl upcoming shows (Wednesdays 13:00)
+
+[Timer]
+OnCalendar=Wed *-*-* 13:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

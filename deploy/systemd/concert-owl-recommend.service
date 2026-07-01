@@ -1,0 +1,12 @@
+[Unit]
+Description=Concert Owl — Spotify vibe recommendations post
+Documentation=https://github.com/mdewey/concert-owl
+After=network-online.target
+Wants=network-online.target
+OnFailure=concert-owl-alert@%N.service
+
+[Service]
+Type=oneshot
+User=dewey
+WorkingDirectory=/home/dewey/projects/concert-owl
+ExecStart=/home/dewey/.nvm/versions/node/v21.7.1/bin/node --env-file=/home/dewey/projects/concert-owl/.env /home/dewey/projects/concert-owl/scripts/recommend.v2.js

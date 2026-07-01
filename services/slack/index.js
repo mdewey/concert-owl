@@ -130,6 +130,11 @@ const postRecommendations = async ({
   });
 };
 
+/** Post a plain text message (used for ops alerts). */
+const postMessage = async ({ text, slackUrl = process.env.SLACK_URL }) => {
+  await axios.post(slackUrl, { text });
+};
+
 const postTestToSlack = async () => {
   const slackUrl = process.env.SLACK_URL;
 
@@ -159,4 +164,10 @@ const postTestToSlack = async () => {
   await axios.post(slackUrl, slackData);
 };
 
-export { postShows, postRecommendations, postTestToSlack, batchShows };
+export {
+  postShows,
+  postRecommendations,
+  postMessage,
+  postTestToSlack,
+  batchShows,
+};

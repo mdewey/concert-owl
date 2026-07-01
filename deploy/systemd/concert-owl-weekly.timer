@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule Concert Owl weekly summary (Mondays 13:00)
+
+[Timer]
+OnCalendar=Mon *-*-* 13:00:00
+# If the Pi was off/rebooting at 13:00, run as soon as it's back up.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
