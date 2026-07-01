@@ -13,8 +13,8 @@ visible via `systemctl list-timers`, and failures post to Slack.
 | `concert-owl-recommend`    | Mon 13:00      | `recommend.v2.js`   |
 
 `concert-owl-alert@.service` is a template unit fired via `OnFailure=`; it runs
-`scripts/alert.js`, which posts to `ALERT_SLACK_URL` (falling back to
-`SLACK_URL`).
+`scripts/alert.js`, which posts to the dedicated errors channel
+(`ERROR_SLACK_URL`).
 
 The paths in the unit files are hardcoded for this Pi:
 - node: `/home/dewey/.nvm/versions/node/v21.7.1/bin/node`

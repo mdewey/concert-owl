@@ -4,12 +4,17 @@
  *
  *   node --env-file=.env scripts/alert.js concert-owl-weekly
  *
- * Uses ALERT_SLACK_URL if set, otherwise falls back to SLACK_URL.
+ * Posts to the dedicated errors channel (ERROR_SLACK_URL).
  */
 import { postMessage } from '../services/slack/index.js';
 
 const unit = process.argv[2] || 'a concert-owl job';
-const slackUrl = process.env.ALERT_SLACK_URL || process.env.SLACK_URL;
+const slackUrl = process.env.ERROR_SLACK_URL;
+
+if (!slackUrl) {
+  console.error('ERROR_SLACK_URL is not set; cannot post failure alert');
+  process.exit(1);
+}
 
 postMessage({
   slackUrl,
