@@ -89,7 +89,7 @@ export async function pushWeeklySummaryV2() {
   return { totalShows: sorted.length };
 }
 
-export async function pushVibeRecommendations() {
+export async function pushVibeRecommendations({ dryRun = false } = {}) {
   const data = await getShows({ url: URL });
   const parsed = await parseShowsToJson({ shows: data.list });
   const today = format(new Date(), 'MMMM d');
@@ -131,7 +131,21 @@ export async function pushVibeRecommendations() {
 
   // Wide matching returns a lot; let the AI narrow to the strongest picks.
   const recommendations = await narrowRecommendations({ matches, vibe });
-  await slack.postRecommendations({ recommendations });
 
-  return { matches: matches.length, recommended: recommendations.length };
+  if (dryRun) {
+    console.log('[dry run] not posting to Slack; recommendations:');
+    for (const r of recommendations) {
+      console.log(
+        `  • ${r.artist} at ${r.venue} (${r.date})` +
+        (r.reason ? ` — ${r.reason}` : ''));
+    }
+  } else {
+    await slack.postRecommendations({ recommendations });
+  }
+
+  return {
+    matches: matches.length,
+    recommended: recommendations.length,
+    dryRun,
+  };
 }
