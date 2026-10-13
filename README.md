@@ -3,15 +3,15 @@
 Concert Owl scrapes upcoming concerts for the Pittsburgh area, enriches each
 show with a genre via the Gemini API, and posts daily and weekly summaries to
 Slack. It runs as a set of scheduled scripts (e.g. via cron or a systemd timer)
-and persists show history to a configurable datastore.
+and persists show history to a local JSON file.
 
 ## Features
 
 - Scrapes concert listings from a public events calendar
 - Enriches shows with genre classification using the Gemini API
 - Posts new-show alerts and weekly summaries to Slack
-- Pluggable datastore with a dual-write migration path from AWS DynamoDB to
-  local JSON storage (see [Datastore & migration](#datastore--migration))
+- Recommends shows matching your Spotify listening vibe
+- Stores show history in a local JSON file (see [Datastore](#datastore))
 
 ## Requirements
 
@@ -19,8 +19,6 @@ and persists show history to a configurable datastore.
 - npm
 - A Slack incoming webhook URL
 - A Gemini API key
-- AWS credentials with DynamoDB access — only while DynamoDB is part of the
-  active datastore mode
 
 ## Setup
 
@@ -38,17 +36,17 @@ and persists show history to a configurable datastore.
 
 The environment variables are:
 
-| Variable           | Required            | Description                                                      |
-| ------------------ | ------------------- | ---------------------------------------------------------------- |
-| `SLACK_URL`        | Yes                 | Slack webhook for new-show alerts                                |
-| `WEEKLY_SLACK_URL` | Yes                 | Slack webhook for the weekly summary                             |
-| `GEMINI_API_KEY`   | Yes                 | API key for genre enrichment                                     |
-| `DATASTORE_MODE`   | No                  | Datastore mode (see below); defaults to `dual-write-read-dynamo` |
-| `JSON_STORE_PATH`  | No                  | Path to the JSON store; defaults to `./data/shows.json`          |
-| `REGION`           | When using DynamoDB | AWS region; defaults to `us-east-1`                              |
-| `TABLE_NAME`       | When using DynamoDB | DynamoDB table name                                              |
-| `ACCESS_KEY`       | When using DynamoDB | AWS access key ID                                                |
-| `SECRET_KEY`       | When using DynamoDB | AWS secret access key                                            |
+| Variable                     | Required          | Description                                             |
+| ---------------------------- | ----------------- | ------------------------------------------------------- |
+| `SLACK_URL`                  | Yes               | Slack webhook for new-show alerts                       |
+| `WEEKLY_SLACK_URL`           | Yes               | Slack webhook for the weekly summary                    |
+| `GEMINI_API_KEY`             | Yes               | API key for genre enrichment                            |
+| `RECOMMENDATIONS_SLACK_URL`  | For `recommend`   | Slack webhook for vibe recommendations                  |
+| `SPOTIFY_CLIENT_ID`          | For `recommend`   | Spotify app client ID (client-credentials flow)         |
+| `SPOTIFY_CLIENT_SECRET`      | For `recommend`   | Spotify app client secret                               |
+| `SPOTIFY_PLAYLIST_ID`        | For `recommend`   | Public playlist representing your vibe (id or URL)      |
+| `ERROR_SLACK_URL`            | For systemd units | Slack webhook the `OnFailure=` alert posts to           |
+| `JSON_STORE_PATH`            | No                | Path to the JSON store; defaults to `./data/shows.json` |
 
 ## Usage
 
@@ -56,7 +54,7 @@ The environment variables are:
 | ----------------------- | -------------------------------------------------- |
 | `npm run upcoming:v2`   | Post shows discovered since the last run to Slack  |
 | `npm run weekly:v2`     | Post a summary of this week's shows to Slack       |
-| `npm run backfill`      | Copy existing DynamoDB records into the JSON store |
+| `npm run recommend:v2`  | Post shows matching your Spotify vibe to Slack     |
 | `npm test`              | Run the Jest test suite                            |
 | `npm run test-coverage` | Run the test suite with coverage reporting         |
 | `npm run lint`          | Lint the codebase with ESLint                      |
@@ -65,54 +63,48 @@ Each script loads variables from `.env` via Node's `--env-file` flag. To run on
 a schedule, invoke `npm run upcoming:v2` and `npm run weekly:v2` from cron or a
 systemd timer at the desired cadence.
 
-## Datastore & migration
+## Datastore
 
-The datastore is accessed through a single facade
-([`services/datastore/index.js`](services/datastore/index.js)) that supports a
-phased, dual-write migration from DynamoDB to a local JSON file. The active
-behavior is selected by the `DATASTORE_MODE` environment variable:
+Show history lives in a single JSON file (`data/shows.json`, overridable with
+`JSON_STORE_PATH`), reached through one facade
+([`services/datastore/index.js`](services/datastore/index.js)) so the backing
+store can change again without touching callers.
 
-| `DATASTORE_MODE`         | Behavior                                   | Phase                  |
-| ------------------------ | ------------------------------------------ | ---------------------- |
-| `dynamo-only`            | Read and write DynamoDB only               | Baseline               |
-| `dual-write-read-dynamo` | Write both stores, read DynamoDB (default) | 1 - start              |
-| `dual-write-read-json`   | Write both stores, read JSON               | 3 - after backfill     |
-| `json-only`              | Read and write JSON only                   | 4 - migration complete |
+Records are a flat array, one object per show-list snapshot, keyed for lookup by
+`source_url`:
 
-In the dual modes, writes go to the primary (source of truth) first and to the
-secondary best-effort; reads come from the primary while a background **shadow
-read** of the secondary logs any drift between the two stores.
+```json
+[{ "id": "uuid", "date": "2026-08-11", "shows": ["..."], "source_url": "https://..." }]
+```
 
-### Recommended migration sequence
+Writes go through a temp file and an atomic rename, so a power loss mid-write
+can't leave a half-written store.
 
-1. Deploy with `DATASTORE_MODE=dual-write-read-dynamo` and confirm the logs
-   report `shadow read OK`.
-2. Run `npm run backfill` to seed the JSON store from DynamoDB.
-3. Switch to `DATASTORE_MODE=dual-write-read-json` and continue monitoring for
-   drift, with DynamoDB still written as a safety net.
-4. Switch to `DATASTORE_MODE=json-only`, then remove the AWS SDK dependencies
-   (`aws-sdk`, `@aws-sdk/*`) and the AWS environment variables.
+This replaced a DynamoDB table; the phased dual-write migration that got us here
+was removed once the JSON store became the source of truth.
 
 ### Backups
 
-In `json-only` mode the JSON file is the sole copy of your show history. Note
-that `data/` is git-ignored by default, so it is **not** version controlled —
-back it up (for example, a scheduled `rsync` to another disk, or committing the
-file to a private repository) to protect against storage failure.
+The JSON file is the **sole copy** of your show history, and `data/` is
+git-ignored — so it is not version controlled. Back it up (a scheduled `rsync`
+to another disk, or committing the file to a private repository) to protect
+against storage failure.
 
 ## Project structure
 
 ```text
-index.js                     Entry points (postNewShows, pushWeeklySummaryV2)
+index.js                     Entry points (postNewShows, pushWeeklySummaryV2,
+                             pushVibeRecommendations)
 services/
   shows/                     Scraping, parsing, and date-range filtering
   ai/                        Gemini genre enrichment
   slack/                     Slack posting
-  datastore/                 Datastore facade + DynamoDB and JSON implementations
-scripts/                     Scheduled-run and backfill entry points
+  spotify/                   Vibe profile and artist matching
+  datastore/                 Datastore facade + JSON file store
+scripts/                     Scheduled-run entry points
+deploy/                      systemd units and installer for the Raspberry Pi
 ```
 
 ## Notes
 
 - The project uses ES modules (`import`/`export`).
-- Ensure your AWS and Slack credentials have the necessary permissions.

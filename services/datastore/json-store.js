@@ -1,10 +1,8 @@
 /**
- * JSON file-backed datastore. Mirrors the DynamoDB store's interface so the two
- * can run side-by-side during the dual-write migration.
+ * JSON file-backed datastore — the show history.
  *
  * Records are stored as a flat array, one object per show-list snapshot:
  *   { id, date, shows, source_url }
- * which matches the shape DynamoDB returned.
  *
  * Override the file location with JSON_STORE_PATH (handy for tests).
  */
@@ -53,22 +51,13 @@ const updateShowList = async ({ id, url, date, shows }) => {
     item.shows = shows;
     if (url !== undefined) item.source_url = url; // keep lookup key fresh
   } else {
-    // DynamoDB's UpdateCommand upserts when the key is absent; mirror that.
-    // source_url must be stored or getShowList({ url }) can never find it.
+    // Upsert: the first run has no id yet. source_url must be stored or
+    // getShowList({ url }) can never find the record again.
     item = { id: id || uuidv4(), date, shows, source_url: url };
     records.push(item);
   }
   await writeAll(records);
-  return { Attributes: item }; // matches DynamoDB ReturnValues: 'ALL_NEW'
+  return item;
 };
 
-/**
- * Replace the entire store with the given records. Used by the backfill script
- * to seed the JSON store from a DynamoDB dump.
- */
-const replaceAll = async (records) => {
-  await writeAll(records);
-  return records.length;
-};
-
-export { createShowList, getShowList, updateShowList, replaceAll };
+export { createShowList, getShowList, updateShowList };

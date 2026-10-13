@@ -63,7 +63,7 @@ export async function postNewShows() {
     `${show.date},  : `+
        `${show.artist} at ${show.venue} -- ${show.genre}`));
 
-  return { createdShow: createdShow.Attributes.id };
+  return { createdShow: createdShow.id };
 }
 
 export async function pushWeeklySummaryV2() {
