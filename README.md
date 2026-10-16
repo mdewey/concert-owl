@@ -42,9 +42,11 @@ The environment variables are:
 | `WEEKLY_SLACK_URL`           | Yes               | Slack webhook for the weekly summary                    |
 | `GEMINI_API_KEY`             | Yes               | API key for genre enrichment                            |
 | `RECOMMENDATIONS_SLACK_URL`  | For `recommend`   | Slack webhook for vibe recommendations                  |
-| `SPOTIFY_CLIENT_ID`          | For `recommend`   | Spotify app client ID (client-credentials flow)         |
-| `SPOTIFY_CLIENT_SECRET`      | For `recommend`   | Spotify app client secret                               |
+| `SPOTIFY_CLIENT_ID`          | For Spotify jobs  | Spotify app client ID (client-credentials flow)         |
+| `SPOTIFY_CLIENT_SECRET`      | For Spotify jobs  | Spotify app client secret                               |
 | `SPOTIFY_PLAYLIST_ID`        | For `recommend`   | Public playlist representing your vibe (id or URL)      |
+| `RELEASE_RADAR_PLAYLIST_ID`  | For release radar | Your Release Radar playlist (id or URL)                 |
+| `RELEASE_RADAR_SLACK_URL`    | For release radar | Slack webhook for the Friday Release Radar post         |
 | `ERROR_SLACK_URL`            | For systemd units | Slack webhook the `OnFailure=` alert posts to           |
 | `JSON_STORE_PATH`            | No                | Path to the JSON store; defaults to `./data/shows.json` |
 
@@ -55,6 +57,7 @@ The environment variables are:
 | `npm run upcoming:v2`   | Post shows discovered since the last run to Slack  |
 | `npm run weekly:v2`     | Post a summary of this week's shows to Slack       |
 | `npm run recommend:v2`  | Post shows matching your Spotify vibe to Slack     |
+| `npm run release-radar` | Post Release Radar albums/singles to Slack         |
 | `npm test`              | Run the Jest test suite                            |
 | `npm run test-coverage` | Run the test suite with coverage reporting         |
 | `npm run lint`          | Lint the codebase with ESLint                      |

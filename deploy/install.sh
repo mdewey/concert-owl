@@ -11,7 +11,7 @@ set -euo pipefail
 UNIT_SRC="$(cd "$(dirname "$0")/systemd" && pwd)"
 UNIT_DST="/etc/systemd/system"
 
-TIMERS=(concert-owl-weekly concert-owl-upcoming concert-owl-recommend concert-owl-release-radar)
+TIMERS=(concert-owl-weekly concert-owl-upcoming concert-owl-release-radar)
 
 echo "Installing units from $UNIT_SRC -> $UNIT_DST"
 install -m 644 "$UNIT_SRC"/*.service "$UNIT_SRC"/*.timer "$UNIT_DST"/
