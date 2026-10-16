@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule Concert Owl Release Radar post (Fridays 09:00)
+
+[Timer]
+# Release Radar refreshes early Friday morning; 09:00 leaves a safe margin.
+OnCalendar=Fri *-*-* 09:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

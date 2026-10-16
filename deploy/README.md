@@ -11,6 +11,7 @@ visible via `systemctl list-timers`, and failures post to Slack.
 | `concert-owl-weekly`       | Mon 13:00      | `weekly.v2.js`      |
 | `concert-owl-upcoming`     | Wed 13:00      | `upcoming.v2.js`    |
 | `concert-owl-recommend`    | Mon 13:00      | `recommend.v2.js`   |
+| `concert-owl-release-radar` | Fri 09:00     | `release-radar.js`  |
 
 `concert-owl-alert@.service` is a template unit fired via `OnFailure=`; it runs
 `scripts/alert.js`, which posts to the dedicated errors channel

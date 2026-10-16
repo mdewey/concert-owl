@@ -5,7 +5,14 @@ import {
   getShowsInDateRange,
 } from './services/shows/index.js';
 import { addShowsGenre, narrowRecommendations } from './services/ai/index.js';
-import { getVibe, matchBandToVibe } from './services/spotify/index.js';
+import {
+  getVibe,
+  matchBandToVibe,
+  getPlaylistReleases,
+  groupByAlbumType,
+  getAlbums,
+  playlistUrl,
+} from './services/spotify/index.js';
 import * as slack from './services/slack/index.js';
 import { getShowList, updateShowList } from './services/datastore/index.js';
 import { format } from 'date-fns';
@@ -146,6 +153,48 @@ export async function pushVibeRecommendations({ dryRun = false } = {}) {
   return {
     matches: matches.length,
     recommended: recommendations.length,
+    dryRun,
+  };
+}
+
+export async function pushReleaseRadar({ dryRun = false } = {}) {
+  const playlistId = process.env.RELEASE_RADAR_PLAYLIST_ID;
+  const tracks = await getPlaylistReleases(playlistId);
+  // An empty list means the embed scrape broke; fail so OnFailure alerts.
+  if (!tracks.length) {
+    throw new Error('Release Radar returned 0 tracks');
+  }
+  const groups = groupByAlbumType(tracks);
+  const albums = getAlbums(tracks);
+
+  if (dryRun) {
+    console.log('[dry run] not posting to Slack; release radar:');
+    console.log(`  open: ${playlistUrl(playlistId)}`);
+    console.log(`  full albums out (${albums.length})`);
+    for (const a of albums) {
+      console.log(
+        `    • ${a.name} — ${a.artists.join(', ')} ` +
+        `(${a.totalTracks} tracks, ${a.releaseDate}) ${a.url}`);
+    }
+    for (const g of groups) {
+      console.log(`  ${g.type} (${g.tracks.length})`);
+      for (const t of g.tracks) {
+        console.log(
+          `    • ${t.name} — ${t.artists.join(', ')} [${t.albumName}]`);
+      }
+    }
+  } else {
+    await slack.postReleaseRadar({
+      groups,
+      albums,
+      playlistUrl: playlistUrl(playlistId),
+    });
+  }
+
+  return {
+    tracks: tracks.length,
+    albumsOut: albums.length,
+    ...Object.fromEntries(groups.map((g) => [g.type, g.tracks.length])),
     dryRun,
   };
 }
