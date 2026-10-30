@@ -157,15 +157,24 @@ export function parseEmbedTrackIds(html) {
     .filter(Boolean);
 }
 
-async function getEmbedTrackIds(playlistId) {
+async function getEmbedTrackIds(playlistId, { attempts = 4 } = {}) {
   const id = parsePlaylistId(playlistId);
-  const resp = await fetch(`https://open.spotify.com/embed/playlist/${id}`, {
-    headers: { 'User-Agent': 'Mozilla/5.0' },
-  });
-  if (!resp.ok) {
-    throw new Error(`Spotify embed fetch failed: ${resp.status}`);
+  for (let attempt = 1; ; attempt++) {
+    const resp = await fetch(`https://open.spotify.com/embed/playlist/${id}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
+    if (resp.ok) return parseEmbedTrackIds(await resp.text());
+    // 5xx and 429 are usually transient on the embed edge; back off and retry.
+    const retryable = resp.status >= 500 || resp.status === 429;
+    if (!retryable || attempt >= attempts) {
+      throw new Error(
+        `Spotify embed fetch failed: ${resp.status} (attempt ${attempt})`);
+    }
+    const delayMs = 5000 * 2 ** (attempt - 1); // 5s, 10s, 20s
+    console.warn(
+      `Spotify embed ${resp.status}, retrying in ${delayMs / 1000}s`);
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
-  return parseEmbedTrackIds(await resp.text());
 }
 
 /**
