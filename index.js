@@ -58,7 +58,7 @@ export async function postNewShows() {
     await slack.postShows({
       shows: fullPackage.map((show) =>
         `${show.date},  : `+
-        `${show.artist} at ${show.venue} -- ${show.genre}`),
+        `${show.artist} at ${show.venue}${show.genre ? ` -- ${show.genre}` : ''}`),
       totalShows: shows.list.length,
     });
   } catch (err) {
@@ -68,7 +68,7 @@ export async function postNewShows() {
   }
   console.log('new shows', fullPackage.map((show) =>
     `${show.date},  : `+
-       `${show.artist} at ${show.venue} -- ${show.genre}`));
+       `${show.artist} at ${show.venue}${show.genre ? ` -- ${show.genre}` : ''}`));
 
   return { createdShow: createdShow.id };
 }
@@ -83,7 +83,7 @@ export async function pushWeeklySummaryV2() {
   await slack.postShows({
     shows: fullPackage.map((show) =>
       `${show.dayOfWeek} - ${show.date},  : `+
-      `${show.artist} at ${show.venue} -- ${show.genre}`),
+      `${show.artist} at ${show.venue}${show.genre ? ` -- ${show.genre}` : ''}`),
     title: 'This week shows!',
     totalShows: fullPackage.length,
     slackUrl: process.env.WEEKLY_SLACK_URL });

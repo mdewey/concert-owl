@@ -14,7 +14,12 @@ const log = (...args) => {
   if (debug) console.log('[AI]', ...args);
 };
 
+// Genre enrichment is disabled: shows pass through without a `genre` field.
+// Flip to true to turn the three-word Gemini genre lookup back on.
+const GENRE_ENABLED = false;
+
 const addShowsGenre = async (shows) => {
+  if (!GENRE_ENABLED) return shows;
   log(`Processing ${shows.length} shows`);
   const start = Date.now();
   const genredShows = shows.map(async (show, i) => {
